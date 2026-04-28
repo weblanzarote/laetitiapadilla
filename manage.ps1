@@ -157,8 +157,8 @@ function Update-CacheBusters {
       #   href="styles.css?v=123"
       # por:
       #   href="styles.css?v=YYYYMMDDHHMMSS"
-      $pattern = "($attr=`"$name)(\?v=[^`""]*)?(`")"
-      $replacement = "`$1?v=$ver`$3"
+      $pattern = '({0}="{1})(\?v=[^"]*)?(")' -f $attr, $name
+      $replacement = ('$1?v=' + $ver + '$3')
       $updated = [Regex]::Replace($updated, $pattern, $replacement)
     }
 
@@ -179,28 +179,11 @@ function Git-Pull {
   git pull origin $Config.Branch
 }
 
-function Update-CacheBuster {
-  Write-Host "Actualizando version de cache (cache busting) en archivos HTML..." -ForegroundColor Yellow
-  $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-  $utf8NoBom = New-Object System.Text.UTF8Encoding $false
-  Get-ChildItem -Path $root -Filter "*.html" | ForEach-Object {
-    $content = Get-Content $_.FullName -Raw
-    if ($content) {
-      $newContent = $content -replace 'href="styles\.css(\?v=[0-9]+)?"', "href=`"styles.css?v=$timestamp`""
-      $newContent = $newContent -replace 'src="script\.js(\?v=[0-9]+)?"', "src=`"script.js?v=$timestamp`""
-      if ($content -cne $newContent) {
-        [System.IO.File]::WriteAllText($_.FullName, $newContent, $utf8NoBom)
-      }
-    }
-  }
-}
-
 function Deploy-Full {
   Require-Command git
   Require-Command ssh
   Require-Command scp
 
-  Update-CacheBuster
   Git-Push
   Deploy-To-Server
 }
