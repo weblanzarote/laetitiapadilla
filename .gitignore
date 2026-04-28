@@ -6,3 +6,6 @@ Thumbs.db
 ## Sensible / notas locales (no subir)
 claves.txt
 
+## Estado local de despliegue (no subir)
+.deploy_last_commit
+

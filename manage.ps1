@@ -135,6 +135,64 @@ function Deploy-Full {
   Deploy-To-Server
 }
 
+function Get-DeployStatePath {
+  return (Join-Path $root ".deploy_last_commit")
+}
+
+function Get-ChangedFilesForDeploy {
+  Require-Command git
+
+  $statePath = Get-DeployStatePath
+  $head = (git rev-parse HEAD).Trim()
+
+  $base = ""
+  if (Test-Path $statePath) {
+    $base = (Get-Content -Raw $statePath).Trim()
+  }
+
+  if (-not $base) {
+    # Primer despliegue (o no hay estado): intenta usar el commit anterior si existe.
+    try {
+      $base = (git rev-parse HEAD~1).Trim()
+    } catch {
+      $base = ""
+    }
+  }
+
+  $changed = @()
+  if ($base) {
+    $changed = @(git diff --name-only --diff-filter=ACMRT $base $head)
+  } else {
+    # Repo nuevo / 1er commit: subimos la lista "conocida" si existe en disco.
+    $changed = @()
+  }
+
+  # Si no detectamos cambios por git (o estado vacío), caemos a la lista fija.
+  if (-not $changed -or $changed.Count -eq 0) {
+    $changed = @(
+      "index.html",
+      "contacto.html",
+      "clases.html",
+      "interprete.html",
+      "acompanamiento.html",
+      "styles.css",
+      "script.js",
+      "logo.jpg",
+      "background.jpg",
+      "background_trans.png",
+      "tarjeta_visita.jpg"
+    )
+  }
+
+  # Solo archivos existentes en el proyecto, y solo ficheros (no carpetas).
+  $changed = $changed |
+    Where-Object { $_ -and (Test-Path $_) } |
+    Where-Object { -not (Get-Item $_).PSIsContainer } |
+    Select-Object -Unique
+
+  return ,$changed
+}
+
 function Deploy-To-Server {
   Require-Command scp
   Require-Command ssh
@@ -143,36 +201,42 @@ function Deploy-To-Server {
   $port = $Config.SshPort
   $dest = $Config.ServerPath
 
+  $keyPath = Join-Path $env:USERPROFILE ".ssh\id_ed25519"
+  $sshOpts = @(
+    "-p", $port,
+    "-i", $keyPath,
+    "-o", "IdentitiesOnly=yes",
+    "-o", "PreferredAuthentications=publickey",
+    "-o", "PasswordAuthentication=no",
+    "-o", "BatchMode=yes"
+  )
+
   if (-not $dest) {
     $dest = Read-Host "Ruta destino en el servidor (ej: /home/$($Config.SshUser)/public_html)"
   }
 
   Write-Host "Probando conexión SSH..." -ForegroundColor Yellow
-  ssh -p $port $server "echo OK" | Out-Null
+  if (-not (Test-Path $keyPath)) {
+    throw "No encuentro la clave SSH en '$keyPath'. Ejecuta la opcion 7 para configurarla."
+  }
+  ssh @sshOpts $server "echo OK" | Out-Null
 
   Write-Host "Subiendo archivos (esto puede tardar)..." -ForegroundColor Yellow
-
-  $files = @(
-    "index.html",
-    "contacto.html",
-    "clases.html",
-    "interprete.html",
-    "acompanamiento.html",
-    "styles.css",
-    "script.js",
-    "logo.jpg",
-    "background.jpg",
-    "background_trans.png",
-    "tarjeta_visita.jpg"
-  ) | Where-Object { Test-Path $_ }
+  $files = Get-ChangedFilesForDeploy
 
   if ($files.Count -eq 0) {
     throw "No encuentro archivos para desplegar en esta carpeta. Estas en la raiz del proyecto?"
   }
 
   # Asegura carpeta destino y sube solo lo necesario (sin .git)
-  ssh -p $port $server "mkdir -p '$dest'" | Out-Null
-  scp -P $port $files "${server}:$dest/"
+  ssh @sshOpts $server "mkdir -p '$dest'" | Out-Null
+  scp -P $port -i $keyPath -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o BatchMode=yes $files "${server}:$dest/"
+
+  # Guarda el commit desplegado para que el siguiente despliegue suba solo cambios.
+  try {
+    $head = (git rev-parse HEAD).Trim()
+    Set-Content -Path (Get-DeployStatePath) -Value $head -Encoding ASCII
+  } catch { }
 
   Write-Host "Despliegue terminado." -ForegroundColor Green
   Write-Host "Si no ves cambios, revisa ServerPath en manage.ps1 (suele ser lo unico que falla)." -ForegroundColor Gray
@@ -218,6 +282,7 @@ function Status-All {
 function Setup-SSHKey {
   Require-Command ssh
   Require-Command ssh-keygen
+  Require-Command ssh-add
 
   $server = "$($Config.SshUser)@$($Config.SshHost)"
   $port = $Config.SshPort
@@ -226,7 +291,7 @@ function Setup-SSHKey {
   $pubPath = "${keyPath}.pub"
   if (-not (Test-Path $keyPath)) {
     Write-Host "Generando clave SSH (ed25519)..." -ForegroundColor Yellow
-    ssh-keygen -t ed25519 -f $keyPath -N '""' | Out-Null
+    ssh-keygen -t ed25519 -f $keyPath -N "" | Out-Null
   } else {
     Write-Host "Ya existe clave: $keyPath" -ForegroundColor Gray
   }
@@ -246,6 +311,15 @@ function Setup-SSHKey {
   $pubKeyEscaped = $pubKey.Replace("'", "''")
   $remoteCmd = "mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '$pubKeyEscaped' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
   ssh -p $port $server $remoteCmd | Out-Null
+
+  # Carga la clave en el ssh-agent para que no pregunte passphrase (y agiliza conexiones).
+  try {
+    $svc = Get-Service -Name "ssh-agent" -ErrorAction SilentlyContinue
+    if ($svc -and $svc.Status -ne "Running") {
+      Start-Service ssh-agent | Out-Null
+    }
+  } catch { }
+  try { ssh-add $keyPath | Out-Null } catch { }
 
   Write-Host "Listo. Deberias poder conectar sin contrasena:" -ForegroundColor Green
   Write-Host "ssh -p $port $server" -ForegroundColor Gray
