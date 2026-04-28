@@ -106,6 +106,8 @@ function Git-Push {
   Require-Command git
   Ensure-GitRepo
 
+  Update-CacheBusters
+
   $msg = Read-Host "Mensaje del commit (Enter para default)"
   if (-not $msg) { $msg = "Update $(Get-Date -Format 'yyyy-MM-dd HH:mm')" }
 
@@ -118,6 +120,57 @@ function Git-Push {
   }
 
   git push origin $Config.Branch
+}
+
+function Update-CacheBusters {
+  # Añade/actualiza ?v=XXXX en assets para evitar caché del navegador.
+  # Solo toca HTML en la raíz del proyecto.
+  try {
+    $porcelain = (git status --porcelain)
+    if (-not $porcelain -or $porcelain.Count -eq 0) { return }
+  } catch { }
+
+  $ver = (Get-Date -Format "yyyyMMddHHmmss")
+
+  $htmlFiles = @(Get-ChildItem -File -Filter "*.html" -ErrorAction SilentlyContinue)
+  if (-not $htmlFiles -or $htmlFiles.Count -eq 0) { return }
+
+  $assets = @(
+    @{ kind = "href"; file = "styles.css" },
+    @{ kind = "src";  file = "script.js" },
+    @{ kind = "src";  file = "background_trans.png" },
+    @{ kind = "src";  file = "background.jpg" },
+    @{ kind = "src";  file = "logo.jpg" }
+  )
+
+  $changedAny = $false
+
+  foreach ($f in $htmlFiles) {
+    $content = Get-Content -Raw $f.FullName
+    $updated = $content
+
+    foreach ($a in $assets) {
+      $attr = $a.kind
+      $name = [Regex]::Escape($a.file)
+      # Reemplaza:
+      #   href="styles.css"
+      #   href="styles.css?v=123"
+      # por:
+      #   href="styles.css?v=YYYYMMDDHHMMSS"
+      $pattern = "($attr=`"$name)(\?v=[^`""]*)?(`")"
+      $replacement = "`$1?v=$ver`$3"
+      $updated = [Regex]::Replace($updated, $pattern, $replacement)
+    }
+
+    if ($updated -ne $content) {
+      Set-Content -Path $f.FullName -Value $updated -Encoding UTF8
+      $changedAny = $true
+    }
+  }
+
+  if ($changedAny) {
+    Write-Host "Cache-busting aplicado (v=$ver) en HTML." -ForegroundColor Gray
+  }
 }
 
 function Git-Pull {
