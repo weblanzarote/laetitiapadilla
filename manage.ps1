@@ -27,6 +27,7 @@ function Show-Menu {
   Write-Host "  LAETITIAPADILLA.COM - MANAGE" -ForegroundColor Cyan
   Write-Host "========================================" -ForegroundColor Cyan
   Write-Host ""
+  Write-Host "1a. Subir a GitHub + desplegar a servidor (todo en 1 paso)"
   Write-Host "1. Inicializar Git + conectar GitHub (solo 1a vez)"
   Write-Host "2. Subir cambios a GitHub (add/commit/push)"
   Write-Host "3. Actualizar desde GitHub (pull local)"
@@ -123,6 +124,15 @@ function Git-Pull {
   Require-Command git
   Ensure-GitRepo
   git pull origin $Config.Branch
+}
+
+function Deploy-Full {
+  Require-Command git
+  Require-Command ssh
+  Require-Command scp
+
+  Git-Push
+  Deploy-To-Server
 }
 
 function Deploy-To-Server {
@@ -245,6 +255,7 @@ do {
   Show-Menu
   $input = Read-Host "Selecciona opcion"
   switch ($input) {
+    '1a' { Deploy-Full; Pause }
     '1' { Init-Git-FirstTime; Pause }
     '2' { Git-Push; Pause }
     '3' { Git-Pull; Pause }
