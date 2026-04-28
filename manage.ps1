@@ -18,7 +18,7 @@ $Config = [ordered]@{
   # - /home/TUUSUARIO/public_html
   # - /home/TUUSUARIO/public_html/DOMINIO/public_html
   # Si al desplegar no ves cambios, lo unico que suele fallar es esta ruta.
-  ServerPath   = "/home/laeti9089/public_html"
+  ServerPath   = "/home/laetitiapadilla.com/public_html"
 }
 
 function Show-Menu {
