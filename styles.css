@@ -133,8 +133,29 @@ main {
     justify-content: center;
     align-items: center;
     position: relative;
-    background: radial-gradient(ellipse at 50% 60%, #deedf8 0%, #eef4e8 45%, #fbf6ec 75%, transparent 100%);
+    overflow: hidden;
     animation: slideInRight 0.9s ease-out both;
+}
+
+.hero-image::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('background.jpg');
+    background-size: cover;
+    background-position: center;
+    filter: blur(18px) saturate(0.9);
+    opacity: 0.18;
+    transform: scale(1.08);
+    z-index: 0;
+}
+
+.hero-image::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 55%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.9) 55%, rgba(255, 255, 255, 1) 100%);
+    z-index: 0;
 }
 
 .hero-image img {
