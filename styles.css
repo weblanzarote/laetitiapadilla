@@ -133,6 +133,7 @@ main {
     justify-content: center;
     align-items: center;
     position: relative;
+    background: transparent;
     overflow: hidden;
     animation: slideInRight 0.9s ease-out both;
 }
