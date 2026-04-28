@@ -1,6 +1,3 @@
-const CONTACT_EMAIL = 'contacto@laetitiapadilla.com';
-const MAILTO_MAX_LENGTH = 2000;
-
 document.addEventListener('DOMContentLoaded', () => {
     const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
     const nav = document.querySelector('nav');
@@ -27,6 +24,8 @@ function initContactForm() {
     if (!form) return;
 
     const feedback = document.getElementById('formFeedback');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const csrfInput = document.getElementById('csrf_token');
     const params = new URLSearchParams(window.location.search);
     const asuntoParam = params.get('asunto');
     if (asuntoParam) {
@@ -47,81 +46,77 @@ function initContactForm() {
         }
     }
 
-    form.addEventListener('submit', (e) => {
+    const setFeedback = (type, message) => {
+        if (!feedback) return;
+        feedback.className = `form-feedback form-feedback--${type}`;
+        feedback.textContent = message;
+    };
+
+    const setBusy = (busy) => {
+        if (!submitBtn) return;
+        submitBtn.disabled = busy;
+        submitBtn.dataset.originalText = submitBtn.dataset.originalText || submitBtn.textContent;
+        submitBtn.textContent = busy ? 'Enviando…' : submitBtn.dataset.originalText;
+    };
+
+    const fetchCsrfToken = async () => {
+        if (!csrfInput) return;
+        try {
+            const res = await fetch('api/contact.php?action=token', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data || !data.ok || !data.token) throw new Error('No token');
+            csrfInput.value = data.token;
+        } catch {
+            // Si no se puede cargar el token, dejamos que el formulario haga submit clásico (action=api/contact.php)
+            csrfInput.value = '';
+        }
+    };
+
+    fetchCsrfToken();
+
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!form.reportValidity()) return;
 
-        const nombre = document.getElementById('nombre').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const telefono = document.getElementById('telefono').value.trim();
-        const asunto = document.getElementById('asunto').value;
-        const mensaje = document.getElementById('mensaje').value.trim();
-
-        const subject = `[Web] ${asunto} — ${nombre}`;
-        const bodyLines = [
-            `Nombre: ${nombre}`,
-            `Email: ${email}`,
-            `Teléfono: ${telefono || '—'}`,
-            '',
-            `Interés: ${asunto}`,
-            '',
-            mensaje
-        ];
-        let body = bodyLines.join('\n');
-
-        const buildUrl = () =>
-            `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-        let url = buildUrl();
-        while (url.length > MAILTO_MAX_LENGTH && body.length > 120) {
-            body = body.slice(0, Math.floor(body.length * 0.88)) + '\n\n[…mensaje acortado; completa el resto en el correo si hace falta…]';
-            url = buildUrl();
-        }
-
-        if (url.length > MAILTO_MAX_LENGTH) {
-            if (feedback) {
-                feedback.className = 'form-feedback form-feedback--error';
-                feedback.textContent =
-                    'El mensaje es demasiado largo para abrirlo automáticamente. Acórtalo un poco o escríbeme directamente a ' +
-                    CONTACT_EMAIL;
-            }
+        // Si no hay token (p. ej. vista previa file://), hacemos submit clásico
+        if (csrfInput && !csrfInput.value) {
+            form.submit();
             return;
         }
 
-        openMailtoUrl(url);
+        setBusy(true);
+        setFeedback('info', 'Enviando…');
+        try {
+            const formData = new FormData(form);
+            const res = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            });
+            const data = await res.json().catch(() => null);
 
-        if (feedback) {
-            feedback.className = 'form-feedback form-feedback--info';
-            feedback.replaceChildren();
-            const p = document.createElement('p');
-            p.textContent =
-                'Debería abrirse tu correo con el mensaje preparado. Si no pasa nada (p. ej. al abrir la web desde un archivo o una vista previa), pulsa el enlace de abajo.';
-            feedback.appendChild(p);
-            const link = document.createElement('a');
-            link.href = url;
-            link.className = 'form-feedback__mailto';
-            link.textContent = 'Abrir el correo con este enlace';
-            link.rel = 'noopener noreferrer';
-            link.target = '_top';
-            feedback.appendChild(link);
+            if (!res.ok || !data) {
+                const err = (data && data.error) ? data.error : 'No se pudo enviar. Inténtalo de nuevo.';
+                throw new Error(err);
+            }
+            if (!data.ok) {
+                throw new Error(data.error || 'No se pudo enviar. Revisa los campos.');
+            }
+
+            setFeedback('ok', data.warning ? `Mensaje enviado. ${data.warning}` : 'Mensaje enviado. Gracias, te responderé lo antes posible.');
+            form.reset();
+            await fetchCsrfToken();
+        } catch (err) {
+            setFeedback('error', err instanceof Error ? err.message : 'No se pudo enviar. Inténtalo de nuevo.');
+            // Reintentamos token por si caducó
+            await fetchCsrfToken();
+        } finally {
+            setBusy(false);
         }
     });
-}
-
-/**
- * Evita window.location.href = mailto:… (Chrome y otros lo bloquean con file://
- * o dentro de iframes: orígenes file únicos / políticas de seguridad).
- */
-function openMailtoUrl(url) {
-    const a = document.createElement('a');
-    a.href = url;
-    a.rel = 'noopener noreferrer';
-    // Con file:// o la página dentro de un iframe (p. ej. vista previa del editor),
-    // _self a veces dispara el error de orígenes; _top suele respetar el gesto del usuario.
-    a.target = '_top';
-    a.style.position = 'fixed';
-    a.style.left = '-9999px';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
 }
