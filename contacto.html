@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contacto | Laetitia Christelle Padilla</title>
+    <meta name="description" content="Contacta con Laetitia Christelle Padilla para clases de francés, servicios de interpretación o acompañamiento cultural en Lanzarote.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Dancing+Script:wght@500;600;700&family=Lato:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <a href="index.html">
+                <img src="logo.jpg" alt="Logo Laetitia Christelle Padilla">
+            </a>
+        </div>
+
+        <button class="mobile-menu-btn" aria-label="Abrir menú">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <nav>
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="clases.html">Clases</a></li>
+                <li><a href="interprete.html">Intérprete</a></li>
+                <li><a href="acompanamiento.html">Acompañamiento</a></li>
+                <li><a href="contacto.html" class="active">Contacto</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="page-main">
+        <div class="page-header">
+            <h1>Contacto</h1>
+        </div>
+
+        <p class="contact-intro">Cuéntame en qué puedo ayudarte y te respondo lo antes posible.</p>
+
+        <!-- Envío nativo: abre el correo del visitante con el mensaje rellenado (sin servicios de terceros). -->
+        <form class="contact-form" id="contactForm" action="#" method="get" novalidate>
+            <div class="contact-form__fields">
+                <div class="form-field">
+                    <label for="nombre">Nombre <span class="required">*</span></label>
+                    <input type="text" id="nombre" name="nombre" autocomplete="name" placeholder="Tu nombre" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="email">Email <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" autocomplete="email" placeholder="tucorreo@ejemplo.com" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="telefono">Teléfono <span class="optional">(opcional)</span></label>
+                    <input type="tel" id="telefono" name="telefono" autocomplete="tel" placeholder="+34 600 000 000">
+                </div>
+
+                <div class="form-field">
+                    <label for="asunto">Me interesa</label>
+                    <select id="asunto" name="asunto">
+                        <option value="General">Información general</option>
+                        <option value="Clases de Francés">Clases de Francés</option>
+                        <option value="Intérprete">Intérprete</option>
+                        <option value="Acompañamiento cultural">Acompañamiento cultural</option>
+                    </select>
+                </div>
+
+                <div class="form-field form-field--full">
+                    <label for="mensaje">Mensaje <span class="required">*</span></label>
+                    <textarea id="mensaje" name="mensaje" rows="6" placeholder="Escribe aquí tu consulta..." required></textarea>
+                </div>
+            </div>
+
+            <div class="form-submit form-field--full">
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                    Preparar correo
+                </button>
+            </div>
+
+            <p class="contact-form__hint">Al enviar se abrirá tu aplicación de correo con el mensaje listo; solo tienes que pulsar «Enviar» en el correo.</p>
+
+            <div class="form-feedback" id="formFeedback" aria-live="polite"></div>
+        </form>
+
+        <div class="contact-alt">
+            <p>También puedes contactarme directamente:</p>
+            <div class="contact-alt-links">
+                <a href="tel:+34694295045" class="contact-item">
+                    <i class="fas fa-phone"></i>
+                    +34 694 29 50 45
+                </a>
+                <a href="mailto:contacto@laetitiapadilla.com" class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    contacto@laetitiapadilla.com
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <a href="tel:+34694295045" class="contact-item">
+                <i class="fas fa-phone"></i>
+                +34 694 29 50 45
+            </a>
+
+            <a href="mailto:contacto@laetitiapadilla.com" class="contact-item">
+                <i class="fas fa-envelope"></i>
+                contacto@laetitiapadilla.com
+            </a>
+
+            <a href="https://laetitiapadilla.com" class="contact-item">
+                <i class="fas fa-globe"></i>
+                LaetitiaPadilla.com
+            </a>
+
+            <div class="social-links">
+                <a href="https://www.facebook.com/laetitiapadilla.frances" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                    <i class="fab fa-facebook"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

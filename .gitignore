@@ -1,0 +1,8 @@
+## Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+## Sensible / notas locales (no subir)
+claves.txt
+
