@@ -233,7 +233,8 @@ function Get-ChangedFilesForDeploy {
       "logo.jpg",
       "background.jpg",
       "background_trans.png",
-      "tarjeta_visita.jpg"
+      "tarjeta_visita.jpg",
+      "api/contact.php"
     )
   }
 
@@ -283,7 +284,15 @@ function Deploy-To-Server {
 
   # Asegura carpeta destino y sube solo lo necesario (sin .git)
   ssh @sshOpts $server "mkdir -p '$dest'" | Out-Null
-  scp -P $port -i $keyPath -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o BatchMode=yes $files "${server}:$dest/"
+  foreach ($file in $files) {
+    $remoteDir = [System.IO.Path]::GetDirectoryName($file).Replace('\', '/')
+    if ($remoteDir) {
+      ssh @sshOpts $server "mkdir -p '$dest/$remoteDir'" | Out-Null
+      scp -P $port -i $keyPath -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o BatchMode=yes $file "${server}:$dest/$remoteDir/"
+    } else {
+      scp -P $port -i $keyPath -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o BatchMode=yes $file "${server}:$dest/"
+    }
+  }
 
   # Guarda el commit desplegado para que el siguiente despliegue suba solo cambios.
   try {
@@ -393,4 +402,3 @@ do {
     '0' { exit }
   }
 } while ($true)
-

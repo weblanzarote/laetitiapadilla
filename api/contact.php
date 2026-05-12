@@ -4,7 +4,7 @@ declare(strict_types=1);
 session_start();
 
 // === Configuración ===
-const CONTACT_TO_EMAIL = 'contacto@laetitiapadilla.com';
+const CONTACT_TO_EMAIL = 'laetitiapadilla.fr@gmail.com';
 const CONTACT_FROM_EMAIL = 'no-reply@laetitiapadilla.com'; // debe existir en tu dominio para mejor entregabilidad
 const ENABLE_EMAIL_SEND = true; // si no tienes MTA/SMTP configurado aún, ponlo en false (igual se guardan los mensajes)
 
@@ -22,6 +22,10 @@ const RATE_LIMIT_PER_DAY = 20;
 function ensure_storage_dir(): void {
     if (!is_dir(STORAGE_DIR)) {
         @mkdir(STORAGE_DIR, 0700, true);
+    }
+    $htaccessPath = STORAGE_DIR . DIRECTORY_SEPARATOR . '.htaccess';
+    if (!is_file($htaccessPath)) {
+        @file_put_contents($htaccessPath, "Require all denied\nDeny from all\n", LOCK_EX);
     }
 }
 
@@ -154,9 +158,10 @@ function send_email(array $record): ?string {
     $headers[] = 'MIME-Version: 1.0';
     $headers[] = 'Content-Type: text/plain; charset=UTF-8';
     $headers[] = 'From: ' . CONTACT_FROM_EMAIL;
+    $headers[] = 'Sender: ' . CONTACT_FROM_EMAIL;
     $headers[] = 'Reply-To: ' . $email;
 
-    $ok = @mail(CONTACT_TO_EMAIL, $subject, $body, implode("\r\n", $headers));
+    $ok = @mail(CONTACT_TO_EMAIL, $subject, $body, implode("\r\n", $headers), '-f' . CONTACT_FROM_EMAIL);
     if ($ok) return null;
     return 'No se pudo enviar el email desde el servidor (pero el mensaje quedó guardado).';
 }
@@ -246,4 +251,3 @@ try {
     }
     html_response(400, 'No se pudo enviar', $msg);
 }
-
