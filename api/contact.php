@@ -5,6 +5,7 @@ session_start();
 
 // === Configuración ===
 const CONTACT_TO_EMAIL = 'laetitiapadilla.fr@gmail.com';
+const CONTACT_BCC_EMAIL = 'weblanzarote@gmail.com';
 const CONTACT_FROM_EMAIL = 'no-reply@laetitiapadilla.com'; // debe existir en tu dominio para mejor entregabilidad
 const ENABLE_EMAIL_SEND = true; // si no tienes MTA/SMTP configurado aún, ponlo en false (igual se guardan los mensajes)
 
@@ -160,6 +161,7 @@ function send_email(array $record): ?string {
     $headers[] = 'From: ' . CONTACT_FROM_EMAIL;
     $headers[] = 'Sender: ' . CONTACT_FROM_EMAIL;
     $headers[] = 'Reply-To: ' . $email;
+    $headers[] = 'Bcc: ' . CONTACT_BCC_EMAIL;
 
     $ok = @mail(CONTACT_TO_EMAIL, $subject, $body, implode("\r\n", $headers), '-f' . CONTACT_FROM_EMAIL);
     if ($ok) return null;

@@ -50,6 +50,9 @@ function initContactForm() {
         if (!feedback) return;
         feedback.className = `form-feedback form-feedback--${type}`;
         feedback.textContent = message;
+        feedback.setAttribute('tabindex', '-1');
+        feedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => feedback.focus({ preventScroll: true }), 250);
     };
 
     const setBusy = (busy) => {
