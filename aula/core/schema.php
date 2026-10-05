@@ -51,4 +51,9 @@ return [
         'CREATE INDEX login_attempts_ip ON login_attempts (ip, created_at)',
         'CREATE INDEX login_attempts_email ON login_attempts (email, created_at)',
     ],
+    // Portada de los cursos: imagen subida o diseño de serie.
+    2 => [
+        'ALTER TABLE courses ADD COLUMN cover_file_id INT NOT NULL DEFAULT 0',
+        "ALTER TABLE courses ADD COLUMN cover_style VARCHAR(20) NOT NULL DEFAULT ''",
+    ],
 ];

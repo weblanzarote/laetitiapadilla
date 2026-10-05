@@ -2,13 +2,36 @@
 <h1 class="page-title"><?= $course ? 'Ajustes del curso' : 'Nuevo curso' ?></h1>
 <?php if ($error): ?><div class="alert alert-error"><?= e($error) ?></div><?php endif; ?>
 
-<form method="post" action="<?= url('course/edit', $course ? ['id' => $course['id']] : []) ?>" class="form card form-wide">
+<form method="post" action="<?= url('course/edit', $course ? ['id' => $course['id']] : []) ?>" enctype="multipart/form-data" class="form card form-wide">
     <?= csrf_field() ?>
     <div class="field">
         <label for="title">Título del curso</label>
         <input type="text" id="title" name="title" value="<?= e($v['title']) ?>" required maxlength="200" placeholder="Francés B1 · 2026-2027">
     </div>
     <?= editor_field('summary', (string)$v['summary'], 'Presentación (opcional)', 'Se ve en la portada del curso.') ?>
+    <fieldset class="fieldset cover-field" id="portada">
+        <legend>Portada</legend>
+        <?php $coverFile = $course ? Courses::coverFile($course) : null; ?>
+        <?php if ($coverFile): ?>
+            <div class="cover-current">
+                <?= Courses::cover($course, 'cover-preview') ?>
+                <label class="check"><input type="checkbox" name="cover_remove" value="1"> Quitar la imagen y usar un diseño de abajo</label>
+            </div>
+        <?php endif; ?>
+        <?= upload_field('cover', $coverFile ? 'Cambiar la imagen (opcional)' : 'Imagen de portada (opcional)', '.' . implode(',.', Courses::COVER_EXT), false, false,
+            'Mejor una foto horizontal (por ejemplo, de París o de tus clases). Se recorta para llenar la franja.') ?>
+        <p class="cover-pick-label"><?= $coverFile ? 'Diseño si quitas la imagen' : 'O elige un diseño' ?></p>
+        <div class="cover-pick">
+            <?php $current = Courses::coverStyle(['id' => (int)$v['id'], 'cover_style' => $v['cover_style']]); ?>
+            <?php foreach (Courses::COVERS as $key => [$name, $word]): ?>
+                <label class="cover-option">
+                    <input type="radio" name="cover_style" value="<?= e($key) ?>" <?= $current === $key ? 'checked' : '' ?>>
+                    <span class="cover cover-<?= e($key) ?>"><span class="cover-word"><?= e($word) ?></span></span>
+                    <small><?= e($name) ?></small>
+                </label>
+            <?php endforeach; ?>
+        </div>
+    </fieldset>
     <div class="field-row">
         <div class="field">
             <label for="enrol_code">Código de inscripción</label>

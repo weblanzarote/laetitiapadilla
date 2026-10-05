@@ -279,7 +279,7 @@ class FileDownloadResource extends FileResourceType
     public function id(): string { return 'file'; }
     public function label(): string { return 'Archivo descargable'; }
     public function icon(): string { return 'file-arrow-down'; }
-    public function help(): string { return 'Word, PowerPoint, Excel, ZIP, imágenes… para descargar.'; }
+    public function help(): string { return 'Imágenes y fichas (se ven en grande), Word, PowerPoint, Excel, ZIP… para descargar.'; }
 
     protected function extensions(): array
     {
@@ -292,8 +292,16 @@ class FileDownloadResource extends FileResourceType
         if (!$f) {
             return '<div class="alert alert-warn">Falta el archivo.</div>';
         }
-        $img = str_starts_with($f['mime'], 'image/') ? '<img class="file-preview" src="' . e(Files::url($f)) . '" alt="">' : '';
-        return '<div class="card file-box">' . $img
+        if (str_starts_with($f['mime'], 'image/')) {
+            $url = Files::url($f);
+            return '<div class="btn-row">'
+                . '<a class="btn btn-primary" href="' . e($url) . '" data-lightbox>' . icon('magnifying-glass-plus') . ' Ver en grande</a>'
+                . $this->downloadButton($f) . '</div>'
+                . '<figure class="image-view"><a href="' . e($url) . '" data-lightbox title="Ver en grande">'
+                . '<img src="' . e($url) . '" alt="' . e($res['title']) . '"></a></figure>'
+                . '<p class="muted small image-hint">' . icon('circle-info') . ' Pulsa la imagen para verla a pantalla completa; pulsa otra vez para ampliarla.</p>';
+        }
+        return '<div class="card file-box">'
             . '<p><span class="res-icon res-icon-file">' . icon('file-arrow-down') . '</span> <strong>' . e($f['name']) . '</strong> <span class="muted">' . fmt_size((int)$f['size']) . '</span></p>'
             . '<a class="btn btn-primary" href="' . e(Files::url($f, true)) . '">' . icon('download') . ' Descargar</a></div>';
     }

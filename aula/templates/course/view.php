@@ -3,6 +3,12 @@ $types = ResourceTypes::all();
 $cid = (int)$course['id'];
 ?>
 <header class="course-hero card">
+    <div class="course-hero-cover">
+        <?= Courses::cover($course) ?>
+        <?php if ($teacher): ?>
+            <a class="btn btn-sm cover-edit" href="<?= url('course/edit', ['id' => $cid]) ?>#portada"><?= icon('image') ?> Cambiar portada</a>
+        <?php endif; ?>
+    </div>
     <div class="course-hero-text">
         <p class="kicker"><?= $teacher ? 'Curso' : 'Mi curso' ?>
             <?php if ($teacher && !(int)$course['visible']): ?><span class="tag tag-muted"><?= icon('eye-slash') ?> Oculto para el alumnado</span><?php endif; ?>

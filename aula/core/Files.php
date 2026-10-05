@@ -221,6 +221,42 @@ class Files
         }
     }
 
+    /**
+     * Reduce una foto recibida si es más ancha que $maxWidth o pesa mucho
+     * (las del móvil pueden ocupar varios MB). Necesita GD; si no está o
+     * algo falla, devuelve el archivo tal cual.
+     */
+    public static function shrinkImage(array $in, int $maxWidth): array
+    {
+        if (!function_exists('imagecreatefromstring') || !in_array(self::ext($in['name']), ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            return $in;
+        }
+        try {
+            $info = @getimagesize($in['path']);
+            if (!$info || ($info[0] <= $maxWidth && $in['size'] <= 1572864)) {
+                return $in;
+            }
+            $src = @imagecreatefromstring((string)file_get_contents($in['path']));
+            if (!$src) {
+                return $in;
+            }
+            $w = min($maxWidth, $info[0]);
+            $h = (int)round($info[1] * $w / $info[0]);
+            $dst = imagecreatetruecolor($w, $h);
+            imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255));
+            imagecopyresampled($dst, $src, 0, 0, 0, 0, $w, $h, $info[0], $info[1]);
+            if (!imagejpeg($dst, $in['path'], 85)) {
+                return $in;
+            }
+            clearstatcache(true, $in['path']);
+            $in['size'] = (int)filesize($in['path']);
+            $in['name'] = pathinfo($in['name'], PATHINFO_FILENAME) . '.jpg';
+        } catch (Throwable $e) {
+            // Nos quedamos con el original.
+        }
+        return $in;
+    }
+
     /** Guarda un archivo recibido y devuelve su id. */
     public static function store(array $in, string $context, int $contextId): int
     {

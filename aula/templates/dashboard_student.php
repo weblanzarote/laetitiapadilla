@@ -24,7 +24,7 @@
         <div class="course-cards">
             <?php foreach ($courses as $c): [$done, $total] = $progress[(int)$c['id']]; $pct = $total ? (int)round($done * 100 / $total) : 0; ?>
                 <a class="card course-card" href="<?= url('course', ['id' => $c['id']]) ?>">
-                    <span class="course-card-icon"><?= icon('book-open') ?></span>
+                    <?= Courses::cover($c, 'course-card-cover') ?>
                     <h3><?= e($c['title']) ?></h3>
                     <?php if ($c['summary']): ?><p class="muted"><?= e(excerpt($c['summary'], 110)) ?></p><?php endif; ?>
                     <div class="progress" role="progressbar" aria-valuenow="<?= $pct ?>" aria-valuemin="0" aria-valuemax="100"><span style="width: <?= $pct ?>%"></span></div>

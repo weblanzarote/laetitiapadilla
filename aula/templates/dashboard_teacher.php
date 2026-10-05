@@ -22,6 +22,7 @@
         <div class="course-list">
             <?php foreach ($courses as $c): $s = $stats[(int)$c['id']]; ?>
                 <article class="card course-row">
+                    <a class="course-row-cover" href="<?= url('course', ['id' => $c['id']]) ?>" tabindex="-1" aria-hidden="true"><?= Courses::cover($c) ?></a>
                     <div class="course-row-main">
                         <h3><a href="<?= url('course', ['id' => $c['id']]) ?>"><?= e($c['title']) ?></a></h3>
                         <div class="tags">

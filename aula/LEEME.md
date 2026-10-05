@@ -32,6 +32,10 @@ CyberPanel o crear una base de datos MySQL y configurarla en `aula/config.local.
 - **Unidades y contenidos**: dentro del curso, «Añadir unidad» y, en cada unidad,
   «Añadir contenido»: PDF, audio, vídeo, página de texto, enlace, archivo o paquete SCORM.
   Todo se puede ocultar, ordenar con las flechas y editar.
+- **Portada del curso**: Ajustes del curso › Portada (o «Cambiar portada» en la cabecera).
+  Se sube una foto horizontal o se elige uno de los diseños de serie.
+- **Imágenes y fichas** (archivo JPG/PNG): se ven a todo el ancho; al pulsarlas se abren a
+  pantalla completa y, con otro toque, se amplían.
 - **Reutilizar un curso** el año siguiente: Ajustes del curso › Duplicar curso.
 - **Mensajes**: privados con cada alumno, a varios a la vez o **avisos a todo el curso**.
   Llegan también por email (configurable en Gestión › Ajustes).

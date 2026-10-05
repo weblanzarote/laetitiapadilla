@@ -46,7 +46,7 @@ Router::add('course', function () {
 
 Router::add('course/edit', function () {
     $course = gint('id') ? course_or_404(gint('id')) : null;
-    $v = $course ?? ['id' => 0, 'title' => '', 'summary' => '', 'enrol_code' => '', 'enrol_open' => 1, 'visible' => 1];
+    $v = $course ?? ['id' => 0, 'title' => '', 'summary' => '', 'enrol_code' => '', 'enrol_open' => 1, 'visible' => 1, 'cover_style' => '', 'cover_file_id' => 0];
     $error = null;
     if (is_post()) {
         $v = array_merge($v, [
@@ -55,6 +55,7 @@ Router::add('course/edit', function () {
             'enrol_code' => p('enrol_code'),
             'enrol_open' => empty($_POST['enrol_open']) ? 0 : 1,
             'visible' => empty($_POST['visible']) ? 0 : 1,
+            'cover_style' => isset(Courses::COVERS[p('cover_style')]) ? p('cover_style') : '',
         ]);
         try {
             if (mb_strlen($v['title']) < 2) {
@@ -64,9 +65,13 @@ Router::add('course/edit', function () {
             if (Db::val('SELECT id FROM courses WHERE enrol_code = ? AND id <> ?', [$code, (int)$v['id']])) {
                 throw new UserError('Ese código ya lo usa otro curso.');
             }
+            $cover = Files::incoming('cover');
+            if ($cover) {
+                Files::checkExt($cover[0], Courses::COVER_EXT);
+            }
             $data = [
                 'title' => mb_substr($v['title'], 0, 200), 'summary' => $v['summary'], 'enrol_code' => $code,
-                'enrol_open' => $v['enrol_open'], 'visible' => $v['visible'], 'updated_at' => time(),
+                'enrol_open' => $v['enrol_open'], 'visible' => $v['visible'], 'cover_style' => $v['cover_style'], 'updated_at' => time(),
             ];
             if ($course) {
                 Db::update('courses', $data, 'id = ?', [$course['id']]);
@@ -79,6 +84,7 @@ Router::add('course/edit', function () {
                 Db::insert('sections', ['course_id' => $id, 'title' => 'Presentación', 'summary' => '', 'sort' => 10, 'visible' => 1]);
                 flash('ok', 'Curso creado. Ahora añade unidades y contenidos.');
             }
+            Courses::saveCover($id, $cover[0] ?? null, !empty($_POST['cover_remove']));
             do_action('course_saved', $id, !$course);
             redirect('course', ['id' => $id]);
         } catch (UserError $e) {

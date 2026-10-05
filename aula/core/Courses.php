@@ -94,6 +94,65 @@ class Courses
         return $code;
     }
 
+    // ─── Portada ──────────────────────────────────────────────────
+
+    /** Diseños de serie para cursos sin imagen: clave => [nombre, frase decorativa]. */
+    const COVERS = [
+        'marino' => ['Azul marino', 'Bonjour'],
+        'coral' => ['Coral', 'Bienvenue'],
+        'tricolor' => ['Tricolor', 'Allons-y !'],
+        'lavanda' => ['Lavanda', 'On y va'],
+        'mar' => ['Mediterráneo', 'Bon voyage'],
+    ];
+
+    const COVER_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+    /** Diseño de serie del curso (si no se eligió, uno fijo según su id). */
+    public static function coverStyle(array $c): string
+    {
+        $style = (string)($c['cover_style'] ?? '');
+        if (isset(self::COVERS[$style])) {
+            return $style;
+        }
+        $keys = array_keys(self::COVERS);
+        return $keys[(int)$c['id'] % count($keys)];
+    }
+
+    public static function coverFile(array $c): ?array
+    {
+        return Files::find((int)($c['cover_file_id'] ?? 0));
+    }
+
+    /** HTML de la portada: la imagen subida o el diseño de serie. */
+    public static function cover(array $c, string $class = ''): string
+    {
+        $f = self::coverFile($c);
+        if ($f) {
+            return '<div class="cover cover-image ' . e($class) . '"><img src="' . e(Files::url($f)) . '" alt="" loading="lazy"></div>';
+        }
+        $style = self::coverStyle($c);
+        return '<div class="cover cover-' . e($style) . ' ' . e($class) . '" aria-hidden="true"><span class="cover-word">' . e(self::COVERS[$style][1]) . '</span></div>';
+    }
+
+    /** Guarda o quita la imagen de portada (después de guardar el curso). */
+    public static function saveCover(int $courseId, ?array $incoming, bool $remove): void
+    {
+        $c = self::find($courseId);
+        $old = (int)$c['cover_file_id'];
+        $new = $old;
+        if ($incoming) {
+            $new = Files::store(Files::shrinkImage($incoming, 1800), 'course', $courseId);
+        } elseif ($remove) {
+            $new = 0;
+        }
+        if ($new !== $old) {
+            Db::update('courses', ['cover_file_id' => $new], 'id = ?', [$courseId]);
+            if ($old) {
+                Files::delete($old);
+            }
+        }
+    }
+
     // ─── Unidades ─────────────────────────────────────────────────
 
     public static function section(int $id): ?array
@@ -231,9 +290,13 @@ class Courses
             'enrol_open' => 0,
             'visible' => 0,
             'sort' => (int)$c['sort'] + 1,
+            'cover_style' => (string)$c['cover_style'],
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+        if ((int)$c['cover_file_id']) {
+            Db::update('courses', ['cover_file_id' => Files::copy((int)$c['cover_file_id'], 'course', $newId)], 'id = ?', [$newId]);
+        }
         foreach (self::sections($courseId, true) as $s) {
             $newSection = Db::insert('sections', [
                 'course_id' => $newId, 'title' => $s['title'], 'summary' => $s['summary'], 'sort' => $s['sort'], 'visible' => $s['visible'],

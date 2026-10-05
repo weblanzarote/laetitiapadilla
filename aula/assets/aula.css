@@ -1068,16 +1068,13 @@ input[type=file] {
     flex: 1;
 }
 
-.course-card-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--c-beige);
-    color: var(--c-coral);
-    font-size: 1.2rem;
+.course-card {
+    overflow: hidden;
+}
+
+.course-card-cover {
+    height: 140px;
+    margin: -1.4rem -1.5rem .4rem;
 }
 
 .course-list {
@@ -1088,9 +1085,24 @@ input[type=file] {
 
 .course-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 150px minmax(0, 1fr) auto;
     gap: .9rem 1.5rem;
     margin: 0;
+}
+
+.course-row-cover {
+    display: block;
+    min-height: 96px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.course-row-cover .cover {
+    height: 100%;
+}
+
+.course-row-cover .cover-word {
+    font-size: 1.35rem;
 }
 
 .course-row h3 {
@@ -1195,6 +1207,186 @@ input[type=file] {
     gap: 1.5rem;
     align-items: start;
     background: linear-gradient(120deg, #fff 55%, var(--c-beige));
+    overflow: hidden;
+}
+
+.course-hero-cover {
+    grid-column: 1 / -1;
+    position: relative;
+    height: 220px;
+    margin: -1.4rem -1.5rem 0;
+}
+
+.course-hero-cover .cover {
+    height: 100%;
+}
+
+.course-hero-cover .cover-word {
+    font-size: 3.4rem;
+}
+
+.cover-edit {
+    position: absolute;
+    top: .8rem;
+    right: .8rem;
+    background: rgba(255, 255, 255, .92);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ─── Portadas ─── */
+
+.cover {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    overflow: hidden;
+    color: #fff;
+    background-color: var(--c-navy);
+}
+
+.cover::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, .22) 1.2px, transparent 1.7px);
+    background-size: 16px 16px;
+    -webkit-mask-image: linear-gradient(105deg, #000 10%, transparent 60%);
+    mask-image: linear-gradient(105deg, #000 10%, transparent 60%);
+}
+
+.cover-image {
+    background: var(--c-blue-soft);
+}
+
+.cover-image::before {
+    display: none;
+}
+
+.cover-image img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cover-word {
+    position: relative;
+    font-family: var(--font-script);
+    font-size: 2.3rem;
+    line-height: 1;
+    padding: 0 .45em .3em 0;
+    transform: rotate(-5deg);
+    text-shadow: 0 2px 12px rgba(12, 43, 94, .25);
+    white-space: nowrap;
+}
+
+.cover-marino {
+    background:
+        radial-gradient(circle at 12% 18%, rgba(108, 160, 220, .55) 0 16%, transparent 16.5%),
+        radial-gradient(circle at 88% 115%, rgba(230, 122, 93, .55) 0 32%, transparent 32.5%),
+        radial-gradient(circle at 62% 28%, rgba(255, 255, 255, .1) 0 9%, transparent 9.5%),
+        linear-gradient(135deg, #0c2b5e, #1f4f93);
+}
+
+.cover-coral {
+    background:
+        radial-gradient(circle at 18% 120%, rgba(251, 246, 236, .45) 0 30%, transparent 30.5%),
+        radial-gradient(circle at 78% 10%, rgba(12, 43, 94, .18) 0 18%, transparent 18.5%),
+        radial-gradient(circle at 45% 40%, rgba(255, 255, 255, .14) 0 7%, transparent 7.5%),
+        linear-gradient(135deg, #e0694c, #f3a585);
+}
+
+.cover-tricolor {
+    background:
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .5) 0 12%, transparent 12.5%),
+        linear-gradient(100deg, #0c2b5e 0 33%, #fbf6ec 33% 66%, #e67a5d 66%);
+}
+
+.cover-tricolor .cover-word {
+    color: var(--c-navy);
+    text-shadow: 0 0 10px rgba(255, 255, 255, .9);
+}
+
+.cover-lavanda {
+    background:
+        radial-gradient(circle at 85% 20%, rgba(255, 255, 255, .3) 0 12%, transparent 12.5%),
+        radial-gradient(ellipse at 20% 130%, rgba(76, 52, 140, .45) 0 45%, transparent 45.5%),
+        repeating-linear-gradient(75deg, rgba(255, 255, 255, .07) 0 10px, transparent 10px 26px),
+        linear-gradient(135deg, #7d68b8, #c3b4e6);
+}
+
+.cover-mar {
+    background:
+        radial-gradient(circle at 80% 26%, #ffd99a 0 9%, rgba(255, 217, 154, .35) 9.5% 13%, transparent 13.5%),
+        radial-gradient(ellipse at 30% 150%, rgba(12, 43, 94, .65) 0 55%, transparent 55.5%),
+        radial-gradient(ellipse at 90% 160%, rgba(255, 255, 255, .25) 0 50%, transparent 50.5%),
+        linear-gradient(170deg, #9cc3ee, #4f86c9 60%, #2b5d9e);
+}
+
+.cover-field .cover-current {
+    margin-bottom: 1rem;
+}
+
+.cover-preview {
+    height: 160px;
+    border-radius: var(--radius-sm);
+    margin-bottom: .75rem;
+}
+
+.cover-pick-label {
+    font-weight: 700;
+    color: var(--c-navy);
+    font-size: .92rem;
+    margin: .25rem 0 .5rem;
+}
+
+.cover-pick {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+
+.cover-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    cursor: pointer;
+    font-size: .85rem;
+    text-align: center;
+}
+
+.cover-option input {
+    position: absolute;
+    opacity: 0;
+}
+
+.cover-option .cover {
+    height: 72px;
+    border-radius: var(--radius-sm);
+    border: 3px solid transparent;
+    transition: border-color .15s, transform .15s;
+}
+
+.cover-option .cover-word {
+    font-size: 1.15rem;
+}
+
+.cover-option:hover .cover {
+    transform: translateY(-2px);
+}
+
+.cover-option input:checked + .cover {
+    border-color: var(--c-coral);
+    box-shadow: 0 0 0 3px rgba(230, 122, 93, .25);
+}
+
+.cover-option input:focus-visible + .cover {
+    outline: 2px solid var(--c-navy);
+    outline-offset: 2px;
 }
 
 .course-hero .page-title {
@@ -1538,10 +1730,112 @@ input[type=file] {
     text-align: center;
 }
 
-.file-preview {
-    max-height: 420px;
-    border-radius: 12px;
-    margin-bottom: 1rem;
+.image-view {
+    margin: 0;
+    padding: .75rem;
+    background: #fff;
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.image-view a {
+    display: block;
+    cursor: zoom-in;
+}
+
+.image-view img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 8px;
+}
+
+.image-hint {
+    margin-top: .5rem;
+}
+
+.prose img {
+    cursor: zoom-in;
+}
+
+/* ─── Visor de imágenes ─── */
+
+.lightbox-open,
+.lightbox-open body {
+    overflow: hidden;
+}
+
+.lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 20, 40, .94);
+}
+
+.lightbox-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .5rem;
+    padding: .6rem .8rem;
+    color: rgba(255, 255, 255, .75);
+    font-size: .85rem;
+}
+
+.lightbox-hint {
+    margin-right: auto;
+}
+
+.lightbox-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.lightbox-btn:hover,
+.lightbox-btn:focus-visible {
+    background: rgba(255, 255, 255, .25);
+    color: #fff;
+}
+
+.lightbox-stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    overflow: auto;
+    padding: 0 1rem 1rem;
+    cursor: zoom-out;
+}
+
+.lightbox-stage img {
+    margin: auto;
+    max-width: 100%;
+    max-height: 100%;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .4);
+    cursor: zoom-in;
+    user-select: none;
+}
+
+.lightbox.zoomed .lightbox-stage img {
+    max-width: none;
+    max-height: none;
+    height: auto;
+    cursor: grab;
 }
 
 .pager {
@@ -2260,6 +2554,31 @@ input[type=file] {
 
     .course-hero-side {
         align-items: flex-start;
+    }
+
+    .course-hero-cover {
+        height: 150px;
+        margin: -1.1rem -1.1rem 0;
+    }
+
+    .course-hero-cover .cover-word {
+        font-size: 2.4rem;
+    }
+
+    .course-card-cover {
+        margin: -1.1rem -1.1rem .4rem;
+    }
+
+    .course-row-cover {
+        height: 110px;
+    }
+
+    .image-view {
+        padding: .4rem;
+    }
+
+    .lightbox-hint {
+        display: none;
     }
 
     .course-row {

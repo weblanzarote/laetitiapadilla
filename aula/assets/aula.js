@@ -425,4 +425,91 @@
             count();
         }
     }
+
+    // ─── Visor de imágenes a pantalla completa ──────────────────
+    // Enlaces con data-lightbox e imágenes de los textos (.prose img).
+    // Primer clic: imagen ajustada a la pantalla; otro clic: ampliada.
+
+    function openLightbox(src, alt) {
+        var box = document.createElement('div');
+        box.className = 'lightbox';
+        box.setAttribute('role', 'dialog');
+        box.setAttribute('aria-modal', 'true');
+        box.setAttribute('aria-label', alt || 'Imagen');
+        box.innerHTML = '<div class="lightbox-bar">'
+            + '<span class="lightbox-hint">Pulsa la imagen para ampliar o reducir</span>'
+            + '<a class="lightbox-btn" target="_blank" rel="noopener" title="Abrir en otra pestaña" aria-label="Abrir en otra pestaña"><i class="fa-solid fa-up-right-from-square"></i></a>'
+            + '<button type="button" class="lightbox-btn" data-lb-close title="Cerrar (Esc)" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>'
+            + '</div><div class="lightbox-stage"><img alt=""></div>';
+        var stage = $('.lightbox-stage', box);
+        var img = $('img', box);
+        $('a.lightbox-btn', box).href = src;
+        img.src = src;
+        img.alt = alt || '';
+        var lastFocus = document.activeElement;
+        var close = function () {
+            box.remove();
+            document.documentElement.classList.remove('lightbox-open');
+            document.removeEventListener('keydown', onKey);
+            if (lastFocus && lastFocus.focus) lastFocus.focus();
+        };
+        var onKey = function (e) {
+            if (e.key === 'Escape') close();
+        };
+        var zoom = function (e) {
+            if (box.classList.contains('zoomed')) {
+                box.classList.remove('zoomed');
+                img.style.width = '';
+                return;
+            }
+            var r = img.getBoundingClientRect();
+            var relX = (e.clientX - r.left) / r.width;
+            var relY = (e.clientY - r.top) / r.height;
+            var width = Math.min(Math.max(img.naturalWidth, r.width * 2), r.width * 4);
+            box.classList.add('zoomed');
+            img.style.width = width + 'px';
+            var height = width * r.height / r.width;
+            stage.scrollLeft = relX * width - stage.clientWidth / 2;
+            stage.scrollTop = relY * height - stage.clientHeight / 2;
+        };
+
+        // Con ratón, arrastrar mueve la imagen ampliada; un clic sin arrastrar amplía/reduce.
+        var drag = null;
+        stage.addEventListener('pointerdown', function (e) {
+            if (e.pointerType !== 'mouse' || e.button !== 0) return;
+            drag = { x: e.clientX, y: e.clientY, left: stage.scrollLeft, top: stage.scrollTop, moved: false };
+        });
+        stage.addEventListener('pointermove', function (e) {
+            if (!drag || !box.classList.contains('zoomed')) return;
+            if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 5) drag.moved = true;
+            if (drag.moved) {
+                e.preventDefault();
+                stage.scrollLeft = drag.left - (e.clientX - drag.x);
+                stage.scrollTop = drag.top - (e.clientY - drag.y);
+            }
+        });
+        stage.addEventListener('click', function (e) {
+            var moved = drag && drag.moved;
+            drag = null;
+            if (moved) return;
+            if (e.target === img) zoom(e); else close();
+        });
+        img.addEventListener('dragstart', function (e) { e.preventDefault(); });
+        $('[data-lb-close]', box).addEventListener('click', close);
+        document.addEventListener('keydown', onKey);
+        document.body.appendChild(box);
+        document.documentElement.classList.add('lightbox-open');
+        $('[data-lb-close]', box).focus();
+    }
+
+    document.addEventListener('click', function (e) {
+        if (e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        var link = e.target.closest('a[data-lightbox]');
+        var img = !link && e.target.closest('.prose img');
+        if (img && img.closest('a')) return;
+        if (!link && !img) return;
+        e.preventDefault();
+        var inner = link && $('img', link);
+        openLightbox(link ? link.href : img.src, inner ? inner.alt : (img ? img.alt : ''));
+    });
 })();
