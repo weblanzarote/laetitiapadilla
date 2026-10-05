@@ -1,0 +1,8 @@
+{
+    "title": "Mensajería",
+    "description": "Mensajes privados entre alumnado y profesora, mensajes a varios alumnos, avisos a todo un curso, adjuntos y avisos por email. Configurable en Ajustes.",
+    "version": "1.0.0",
+    "icon": "comments",
+    "default": true,
+    "required": false
+}

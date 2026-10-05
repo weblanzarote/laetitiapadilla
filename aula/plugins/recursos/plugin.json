@@ -1,0 +1,8 @@
+{
+    "title": "Contenidos básicos",
+    "description": "PDF, audio, vídeo, páginas de texto, enlaces y archivos descargables.",
+    "version": "1.0.0",
+    "icon": "layer-group",
+    "default": true,
+    "required": true
+}

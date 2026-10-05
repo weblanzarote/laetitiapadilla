@@ -85,6 +85,40 @@ nav a.active {
     color: var(--color-light-blue);
 }
 
+/* Botón del aula virtual (alumnado) */
+nav ul {
+    align-items: center;
+}
+
+nav a.nav-aula {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 1.1rem;
+    border: 1.5px solid var(--color-coral);
+    border-radius: 50px;
+    color: var(--color-navy);
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+nav a.nav-aula i {
+    color: var(--color-coral);
+    transition: color 0.25s ease;
+}
+
+nav a.nav-aula::after {
+    display: none;
+}
+
+nav a.nav-aula:hover {
+    background-color: var(--color-coral);
+    color: var(--color-white);
+}
+
+nav a.nav-aula:hover i {
+    color: var(--color-white);
+}
+
 /* Mobile Menu Button */
 .mobile-menu-btn {
     display: none;
@@ -905,11 +939,20 @@ footer {
     }
 
     nav.open {
-        max-height: 320px;
+        max-height: 420px;
+    }
+
+    nav a.nav-aula {
+        display: flex;
+        margin: 0.6rem 6%;
+        justify-content: center;
+        padding: 0.75rem 1rem;
+        border-bottom: 1.5px solid var(--color-coral);
     }
 
     nav ul {
         flex-direction: column;
+        align-items: stretch;
         gap: 0;
         padding: 0.5rem 0;
     }

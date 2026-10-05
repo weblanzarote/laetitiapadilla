@@ -1,0 +1,8 @@
+{
+    "title": "SCORM",
+    "description": "Sube paquetes SCORM 1.2 o 2004 (ZIP). Reproductor integrado con índice, reanudación donde se quedó cada alumno y seguimiento de estado, nota y tiempo.",
+    "version": "1.0.0",
+    "icon": "cube",
+    "default": true,
+    "required": false
+}

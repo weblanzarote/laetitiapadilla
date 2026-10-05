@@ -1,0 +1,11 @@
+# Aula virtual: solo index.php, serve.php, assets/ y los recursos estáticos de
+# plugins/ deben ser accesibles. (Los .php internos además se protegen solos.)
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(core|templates)/ - [F,L]
+    RewriteRule ^config(\.local|\.local\.example)?\.php$ - [F,L]
+    RewriteRule ^plugins/[^/]+/(.+\.php|templates/.*)$ - [F,L]
+    RewriteRule (^|/)[^/]+\.md$ - [F,L]
+</IfModule>

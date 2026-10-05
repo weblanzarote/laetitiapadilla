@@ -9,3 +9,7 @@ claves.txt
 ## Estado local de despliegue (no subir)
 .deploy_last_commit
 
+## Aula virtual: configuración propia del servidor y datos de pruebas locales
+aula/config.local.php
+aula_data/
+
