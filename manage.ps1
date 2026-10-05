@@ -1,4 +1,14 @@
 # LaetitiaPadilla.com - gestion local/GitHub/Servidor (CyberPanel)
+#
+# Sin parametros abre el menu. Sin preguntas (para agentes o atajos):
+#   .\manage.ps1 -Action deploy -Message "Texto del commit"   (= opcion 1a)
+#   .\manage.ps1 -Action server                               (= opcion 4)
+
+param(
+  [ValidateSet('deploy', 'server')]
+  [string]$Action,
+  [string]$Message = ''
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -108,7 +118,8 @@ function Git-Push {
 
   Update-CacheBusters
 
-  $msg = Read-Host "Mensaje del commit (Enter para default)"
+  $msg = $Message
+  if (-not $msg -and -not $Action) { $msg = Read-Host "Mensaje del commit (Enter para default)" }
   if (-not $msg) { $msg = "Update $(Get-Date -Format 'yyyy-MM-dd HH:mm')" }
 
   git add .
@@ -412,6 +423,14 @@ function Setup-SSHKey {
 
   Write-Host "Listo. Deberias poder conectar sin contrasena:" -ForegroundColor Green
   Write-Host "ssh -p $port $server" -ForegroundColor Gray
+}
+
+if ($Action) {
+  switch ($Action) {
+    'deploy' { Deploy-Full }
+    'server' { Deploy-To-Server }
+  }
+  exit 0
 }
 
 do {
