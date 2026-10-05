@@ -30,7 +30,8 @@ function initContactForm() {
     const asuntoParam = params.get('asunto');
     if (asuntoParam) {
         const map = {
-            clases: 'Clases de Francés',
+            formacion: 'Formación para centros y academias',
+            clases: 'Formación para centros y academias', // enlaces antiguos
             interprete: 'Intérprete',
             acompanamiento: 'Acompañamiento cultural'
         };
@@ -104,18 +105,18 @@ function initContactForm() {
             const data = await res.json().catch(() => null);
 
             if (!res.ok || !data) {
-                const err = (data && data.error) ? data.error : 'No se pudo enviar. Inténtalo de nuevo.';
+                const err = (data && data.error) ? data.error : 'No se pudo enviar. Inténtelo de nuevo.';
                 throw new Error(err);
             }
             if (!data.ok) {
-                throw new Error(data.error || 'No se pudo enviar. Revisa los campos.');
+                throw new Error(data.error || 'No se pudo enviar. Revise los campos.');
             }
 
-            setFeedback('ok', data.warning ? `Mensaje enviado. ${data.warning}` : 'Mensaje enviado. Gracias, te responderé lo antes posible.');
+            setFeedback('ok', data.warning ? `Mensaje enviado. ${data.warning}` : 'Mensaje enviado. Gracias, le responderé lo antes posible.');
             form.reset();
             await fetchCsrfToken();
         } catch (err) {
-            setFeedback('error', err instanceof Error ? err.message : 'No se pudo enviar. Inténtalo de nuevo.');
+            setFeedback('error', err instanceof Error ? err.message : 'No se pudo enviar. Inténtelo de nuevo.');
             // Reintentamos token por si caducó
             await fetchCsrfToken();
         } finally {

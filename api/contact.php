@@ -117,7 +117,7 @@ function rate_limit_check_or_throw(string $ip): void {
     $hitsLastHour = array_values(array_filter($hits, fn($t) => $t > $hourAgo));
 
     if (count($hitsLastHour) >= RATE_LIMIT_PER_HOUR || count($hits) >= RATE_LIMIT_PER_DAY) {
-        throw new RuntimeException('Demasiados envíos. Prueba de nuevo en unos minutos.');
+        throw new RuntimeException('Demasiados envíos. Pruebe de nuevo en unos minutos.');
     }
 
     $hits[] = $now;
@@ -188,12 +188,12 @@ try {
     if ($company !== '') {
         // Fingimos éxito para bots.
         if (is_ajax_request()) json_response(200, ['ok' => true]);
-        html_response(200, 'Mensaje enviado', 'Gracias. He recibido tu mensaje.');
+        html_response(200, 'Mensaje enviado', 'Gracias. He recibido su mensaje.');
     }
 
     $csrf = get_post_value('csrf_token');
     if (!csrf_validate($csrf)) {
-        throw new RuntimeException('Sesión caducada. Recarga la página y vuelve a enviar.');
+        throw new RuntimeException('Sesión caducada. Recargue la página y vuelva a enviar.');
     }
 
     $ip = client_ip();
@@ -215,7 +215,7 @@ try {
     $allowedInterests = [
         'General',
         'Información general',
-        'Clases de Francés',
+        'Formación para centros y academias',
         'Intérprete',
         'Acompañamiento cultural'
     ];
@@ -245,7 +245,7 @@ try {
     if (is_ajax_request()) {
         json_response(200, ['ok' => true, 'warning' => $emailWarning]);
     }
-    html_response(200, 'Mensaje enviado', 'Gracias. He recibido tu mensaje y te responderé lo antes posible.');
+    html_response(200, 'Mensaje enviado', 'Gracias. He recibido su mensaje y le responderé lo antes posible.');
 } catch (Throwable $e) {
     $msg = $e->getMessage();
     if (is_ajax_request()) {

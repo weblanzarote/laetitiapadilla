@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contacto | Laetitia Padilla - Profesora, IntÃ©rprete y GuÃ­a en Lanzarote</title>
-    <meta name="description" content="Contacta con Laetitia para cursos de francÃ©s en Lanzarote, servicios de intÃ©rprete, tours o acompaÃ±amiento cultural.">
-    <meta name="keywords" content="contacto, curso de francÃ©s en lanzarote, tours, guia, intÃ©rprete, profesora de francÃ©s">
+    <title>Contacto | Laetitia Padilla - FormaciÃ³n en francÃ©s para centros y academias</title>
+    <meta name="description" content="Contacte con Laetitia Padilla para formaciÃ³n en francÃ©s en centros educativos, academias y empresas, servicios de intÃ©rprete o acompaÃ±amiento cultural en Lanzarote.">
+    <meta name="keywords" content="contacto, docente de francÃ©s Lanzarote, formaciÃ³n en francÃ©s para centros, profesora de francÃ©s para academias, intÃ©rprete de francÃ©s">
 
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="Contacto | Laetitia Padilla - Profesora, IntÃ©rprete y GuÃ­a">
-    <meta property="og:description" content="Contacta con Laetitia para cursos de francÃ©s, servicios de intÃ©rprete o tours en Lanzarote.">
+    <meta property="og:title" content="Contacto | Laetitia Padilla - FormaciÃ³n en francÃ©s para centros y academias">
+    <meta property="og:description" content="Solicite una propuesta de formaciÃ³n en francÃ©s para su centro, academia o empresa.">
     <meta property="og:image" content="https://laetitiapadilla.com/tarjeta_visita.jpg">
     <meta property="og:url" content="https://laetitiapadilla.com/contacto.html">
     <meta property="og:type" content="website">
@@ -21,14 +21,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Dancing+Script:wght@500;600;700&family=Lato:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css?v=20261005112903">
+    <link rel="stylesheet" href="styles.css?v=20261005122207">
 </head>
 <body>
 
     <header>
         <div class="logo-container">
             <a href="index.html">
-                <img src="logo.jpg?v=20261005112903" alt="Logo Laetitia Christelle Padilla">
+                <img src="logo.jpg?v=20261005122207" alt="Logo Laetitia Christelle Padilla">
             </a>
         </div>
 
@@ -39,7 +39,7 @@
         <nav>
             <ul>
                 <li><a href="index.html">Inicio</a></li>
-                <li><a href="clases.html">Clases</a></li>
+                <li><a href="formacion.html">FormaciÃ³n</a></li>
                 <li><a href="interprete.html">IntÃ©rprete</a></li>
                 <li><a href="acompanamiento.html">AcompaÃ±amiento</a></li>
                 <li><a href="contacto.html" class="active">Contacto</a></li>
@@ -53,7 +53,8 @@
             <h1>Contacto</h1>
         </div>
 
-        <p class="contact-intro">CuÃ©ntame en quÃ© puedo ayudarte y te respondo lo antes posible.</p>
+        <p class="contact-intro">CuÃ©nteme quÃ© necesita su centro, academia o empresa y le responderÃ© lo antes posible.</p>
+        <p class="contact-notice">Actualmente no imparto clases particulares.</p>
 
         <!-- EnvÃ­o al servidor (sin servicios de terceros). -->
         <form class="contact-form" id="contactForm" action="api/contact.php" method="post" novalidate>
@@ -63,12 +64,12 @@
             <div class="contact-form__fields">
                 <div class="form-field">
                     <label for="nombre">Nombre <span class="required">*</span></label>
-                    <input type="text" id="nombre" name="nombre" autocomplete="name" placeholder="Tu nombre" required>
+                    <input type="text" id="nombre" name="nombre" autocomplete="name" placeholder="Nombre y apellidos" required>
                 </div>
 
                 <div class="form-field">
                     <label for="email">Email <span class="required">*</span></label>
-                    <input type="email" id="email" name="email" autocomplete="email" placeholder="tucorreo@ejemplo.com" required>
+                    <input type="email" id="email" name="email" autocomplete="email" placeholder="nombre@centro.es" required>
                 </div>
 
                 <div class="form-field">
@@ -80,7 +81,7 @@
                     <label for="asunto">Me interesa</label>
                     <select id="asunto" name="asunto">
                         <option value="General">InformaciÃ³n general</option>
-                        <option value="Clases de FrancÃ©s">Clases de FrancÃ©s</option>
+                        <option value="FormaciÃ³n para centros y academias">FormaciÃ³n para centros y academias</option>
                         <option value="IntÃ©rprete">IntÃ©rprete</option>
                         <option value="AcompaÃ±amiento cultural">AcompaÃ±amiento cultural</option>
                     </select>
@@ -88,7 +89,7 @@
 
                 <div class="form-field form-field--full">
                     <label for="mensaje">Mensaje <span class="required">*</span></label>
-                    <textarea id="mensaje" name="mensaje" rows="6" placeholder="Escribe aquÃ­ tu consulta..." required></textarea>
+                    <textarea id="mensaje" name="mensaje" rows="6" placeholder="Centro o empresa, nivel, nÃºmero de alumnos, fechas y modalidad..." required></textarea>
                 </div>
             </div>
 
@@ -101,11 +102,11 @@
 
             <div class="form-feedback" id="formFeedback" aria-live="polite"></div>
 
-            <p class="contact-form__hint">Tu mensaje se enviarÃ¡ de forma segura desde el servidor. Te responderÃ© lo antes posible.</p>
+            <p class="contact-form__hint">Su mensaje se enviarÃ¡ de forma segura desde el servidor. Le responderÃ© lo antes posible.</p>
         </form>
 
         <div class="contact-alt">
-            <p>TambiÃ©n puedes contactarme directamente:</p>
+            <p>TambiÃ©n puede contactarme directamente:</p>
             <div class="contact-alt-links">
                 <a href="tel:+34694295045" class="contact-item">
                     <i class="fas fa-phone"></i>
@@ -144,13 +145,7 @@
         </div>
     </footer>
 
-    <script src="script.js?v=20261005112903"></script>
+    <script src="script.js?v=20261005122207"></script>
 </body>
 </html>
-
-
-
-
-
-
 

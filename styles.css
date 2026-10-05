@@ -101,6 +101,27 @@ nav a.nav-aula {
     transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+nav a.nav-aula {
+    white-space: nowrap;
+}
+
+/* Menú más compacto en pantallas intermedias (portátiles pequeños, tabletas en horizontal). */
+@media (max-width: 1180px) and (min-width: 901px) {
+    header {
+        padding-left: 4%;
+        padding-right: 4%;
+    }
+
+    nav ul {
+        gap: 1.4rem;
+    }
+
+    nav a {
+        font-size: 0.78rem;
+        letter-spacing: 0.8px;
+    }
+}
+
 nav a.nav-aula i {
     color: var(--color-coral);
     transition: color 0.25s ease;
@@ -311,6 +332,109 @@ main {
     color: var(--color-white);
     box-shadow: 0 10px 30px rgba(230, 122, 93, 0.35);
     transform: translateX(5px);
+}
+
+/* Las secciones de la portada ocupan todo el ancho (main centra en columna). */
+.home-main > section {
+    width: 100%;
+}
+
+/* ─── Home: Services ─── */
+.services-section {
+    padding: 5rem 7%;
+    background-color: var(--color-beige);
+}
+
+.services-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.section-title {
+    font-family: var(--font-serif);
+    font-size: 2.2rem;
+    color: var(--color-navy);
+    margin-bottom: 3rem;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1.75rem;
+}
+
+.service-card {
+    background-color: var(--color-white);
+    padding: 2.25rem 1.75rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(12, 43, 94, 0.05);
+    text-align: left;
+    transition: transform 0.3s ease;
+}
+
+.service-card:hover {
+    transform: translateY(-5px);
+}
+
+.service-card i {
+    font-size: 1.6rem;
+    color: var(--color-coral);
+    margin-bottom: 1.1rem;
+    display: block;
+}
+
+.service-card h3 {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    color: var(--color-navy);
+    margin-bottom: 0.6rem;
+}
+
+.service-card p {
+    font-size: 0.98rem;
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+.section-cta {
+    margin-top: 2.75rem;
+}
+
+.section-cta .btn-large:hover {
+    transform: translateY(-2px);
+}
+
+/* ─── Home: Other Services ─── */
+.other-services {
+    padding: 3.5rem 7%;
+    background-color: var(--color-white);
+    border-top: 1px solid rgba(108, 160, 220, 0.12);
+}
+
+.other-services-container {
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.other-services h2 {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: var(--color-navy);
+    margin-bottom: 0.75rem;
+}
+
+.other-services p {
+    color: var(--color-text);
+    margin-bottom: 1.25rem;
+}
+
+.other-services-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1.75rem;
 }
 
 /* ─── Home: About Section ─── */
@@ -651,6 +775,17 @@ footer {
     font-weight: 300;
 }
 
+.contact-notice {
+    display: inline-block;
+    font-size: 0.9rem;
+    color: var(--color-navy);
+    background-color: rgba(230, 122, 93, 0.06);
+    border: 1px solid rgba(230, 122, 93, 0.25);
+    border-radius: 50px;
+    padding: 0.45rem 1.1rem;
+    margin: -1.5rem 0 2.5rem;
+}
+
 .contact-form {
     max-width: 560px;
     margin: 0 auto;
@@ -916,7 +1051,8 @@ footer {
     }
 }
 
-@media (max-width: 768px) {
+/* Menú hamburguesa: a partir de 900px el menú completo ya no cabe en una línea. */
+@media (max-width: 900px) {
     header {
         padding: 1rem 5%;
     }
@@ -969,6 +1105,9 @@ footer {
     nav a::after {
         display: none;
     }
+}
+
+@media (max-width: 768px) {
 
     .hero-name {
         font-size: 2.8rem;
@@ -982,11 +1121,13 @@ footer {
         padding: 4rem 5%;
     }
 
-    .testimonials-section {
+    .testimonials-section,
+    .services-section {
         padding: 4rem 5%;
     }
 
-    .testimonials-section h2 {
+    .testimonials-section h2,
+    .section-title {
         font-size: 1.8rem;
         margin-bottom: 2rem;
     }

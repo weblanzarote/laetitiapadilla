@@ -146,7 +146,9 @@ function Update-CacheBusters {
   $changedAny = $false
 
   foreach ($f in $htmlFiles) {
-    $content = Get-Content -Raw $f.FullName
+    # Leer y escribir siempre como UTF-8 (sin BOM): Get-Content/Set-Content en
+    # PowerShell 5.1 leen como ANSI y rompen los acentos (Ã©) al guardar.
+    $content = [System.IO.File]::ReadAllText($f.FullName, [System.Text.Encoding]::UTF8)
     $updated = $content
 
     foreach ($a in $assets) {
@@ -163,7 +165,7 @@ function Update-CacheBusters {
     }
 
     if ($updated -ne $content) {
-      Set-Content -Path $f.FullName -Value $updated -Encoding UTF8
+      [System.IO.File]::WriteAllText($f.FullName, $updated, (New-Object System.Text.UTF8Encoding($false)))
       $changedAny = $true
     }
   }
@@ -225,6 +227,7 @@ function Get-ChangedFilesForDeploy {
     $changed = @(
       "index.html",
       "contacto.html",
+      "formacion.html",
       "clases.html",
       "interprete.html",
       "acompanamiento.html",
@@ -262,7 +265,8 @@ function Deploy-To-Server {
     "-o", "IdentitiesOnly=yes",
     "-o", "PreferredAuthentications=publickey",
     "-o", "PasswordAuthentication=no",
-    "-o", "BatchMode=yes"
+    "-o", "BatchMode=yes",
+    "-o", "ConnectTimeout=20"
   )
 
   if (-not $dest) {
@@ -274,6 +278,9 @@ function Deploy-To-Server {
     throw "No encuentro la clave SSH en '$keyPath'. Ejecuta la opcion 7 para configurarla."
   }
   ssh @sshOpts $server "echo OK" | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "No puedo conectar por SSH con la clave '$keyPath'. Ejecuta la opcion 7 para registrar la clave en el servidor y vuelve a desplegar (opcion 4)."
+  }
 
   Write-Host "Subiendo archivos (esto puede tardar)..." -ForegroundColor Yellow
   $files = Get-ChangedFilesForDeploy
@@ -282,17 +289,37 @@ function Deploy-To-Server {
     throw "No encuentro archivos para desplegar en esta carpeta. Estas en la raiz del proyecto?"
   }
 
-  # Asegura carpeta destino y sube solo lo necesario (sin .git)
-  ssh @sshOpts $server "mkdir -p '$dest'" | Out-Null
-  foreach ($file in $files) {
-    $remoteDir = [System.IO.Path]::GetDirectoryName($file).Replace('\', '/')
-    if ($remoteDir) {
-      ssh @sshOpts $server "mkdir -p '$dest/$remoteDir'" | Out-Null
-      scp -P $port -i $keyPath -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o BatchMode=yes $file "${server}:$dest/$remoteDir/"
-    } else {
-      scp -P $port -i $keyPath -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o BatchMode=yes $file "${server}:$dest/"
-    }
+  # Archivos del repo que no deben acabar en la web publica.
+  $noDeploy = @('AGENTS.md', 'manage.ps1', '.gitignore', 'claves.txt')
+  $files = @($files | Where-Object { $noDeploy -notcontains ($_ -replace '\\', '/') })
+  if ($files.Count -eq 0) {
+    Write-Host "No hay archivos de la web que subir." -ForegroundColor Gray
+    return
   }
+
+  # Empaqueta todo en un solo .tar y lo sube de una vez (3 conexiones en total;
+  # abrir una conexion por archivo hacia que el servidor se atascara).
+  Require-Command tar
+  $tarName = ".deploy_upload_$(Get-Date -Format 'yyyyMMddHHmmss').tar"
+  $tarLocal = Join-Path $env:TEMP $tarName
+  $listFile = Join-Path $env:TEMP "$tarName.txt"
+  [System.IO.File]::WriteAllLines($listFile, [string[]]($files | ForEach-Object { $_ -replace '\\', '/' }))
+  Write-Host "Empaquetando $($files.Count) archivo(s)..." -ForegroundColor Gray
+  tar -cf $tarLocal -T $listFile
+  if ($LASTEXITCODE -ne 0) { throw "No se pudo crear el paquete de despliegue." }
+
+  $timeoutOpts = @("-o", "ConnectTimeout=20", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4")
+  try {
+    ssh @sshOpts @timeoutOpts $server "mkdir -p '$dest'" | Out-Null
+    scp -P $port -i $keyPath -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o BatchMode=yes @timeoutOpts $tarLocal "${server}:$dest/$tarName"
+    if ($LASTEXITCODE -ne 0) { throw "No se pudo subir el paquete al servidor. No guardo el estado: el siguiente despliegue volvera a intentarlo." }
+
+    ssh @sshOpts @timeoutOpts $server "cd '$dest' && tar -xf '$tarName' && rm -f '$tarName'"
+    if ($LASTEXITCODE -ne 0) { throw "No se pudo descomprimir el paquete en el servidor. No guardo el estado: el siguiente despliegue volvera a intentarlo." }
+  } finally {
+    Remove-Item -Force $tarLocal, $listFile -ErrorAction SilentlyContinue
+  }
+  Write-Host "Subidos $($files.Count) archivo(s)." -ForegroundColor Gray
 
   # Guarda el commit desplegado para que el siguiente despliegue suba solo cambios.
   try {
