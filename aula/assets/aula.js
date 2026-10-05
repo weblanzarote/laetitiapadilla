@@ -81,6 +81,19 @@
             }
         }
 
+        // Enlaces que abren un <details> de la página (p. ej. «Nuevo apartado»)
+        var opener = e.target.closest('[data-open]');
+        if (opener) {
+            var box = $(opener.getAttribute('data-open'));
+            if (box) {
+                e.preventDefault();
+                box.open = true;
+                box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                var field = $('input:not([type=hidden])', box);
+                if (field) setTimeout(function () { field.focus({ preventScroll: true }); }, 300);
+            }
+        }
+
         var pw = e.target.closest('.password-toggle');
         if (pw) {
             var input = pw.parentNode.querySelector('input');

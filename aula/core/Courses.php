@@ -1,7 +1,7 @@
 <?php
 defined('AULA') || exit;
 
-/** Cursos, unidades (sections), recursos e inscripciones. */
+/** Cursos, apartados (sections), recursos e inscripciones. */
 class Courses
 {
     // ─── Cursos ───────────────────────────────────────────────────
@@ -153,7 +153,7 @@ class Courses
         }
     }
 
-    // ─── Unidades ─────────────────────────────────────────────────
+    // ─── Apartados ────────────────────────────────────────────────
 
     public static function section(int $id): ?array
     {
@@ -182,7 +182,7 @@ class Courses
         return $r ? self::decode($r) : null;
     }
 
-    /** Recursos del curso (visibles en unidades visibles si $includeHidden es false). */
+    /** Recursos del curso (visibles en apartados visibles si $includeHidden es false). */
     public static function resources(int $courseId, bool $includeHidden): array
     {
         $sql = 'SELECT r.* FROM resources r JOIN sections s ON s.id = r.section_id WHERE r.course_id = ?';
@@ -278,7 +278,7 @@ class Courses
         do_action('course_deleted', $courseId);
     }
 
-    /** Duplica un curso (unidades y recursos, sin alumnos). Devuelve el id nuevo. */
+    /** Duplica un curso (apartados y recursos, sin alumnos). Devuelve el id nuevo. */
     public static function duplicate(int $courseId): int
     {
         $c = self::find($courseId);
@@ -298,33 +298,51 @@ class Courses
             Db::update('courses', ['cover_file_id' => Files::copy((int)$c['cover_file_id'], 'course', $newId)], 'id = ?', [$newId]);
         }
         foreach (self::sections($courseId, true) as $s) {
-            $newSection = Db::insert('sections', [
-                'course_id' => $newId, 'title' => $s['title'], 'summary' => $s['summary'], 'sort' => $s['sort'], 'visible' => $s['visible'],
-            ]);
-            foreach (Db::all('SELECT id FROM resources WHERE section_id = ? ORDER BY sort, id', [$s['id']]) as $row) {
-                $r = self::resource((int)$row['id']);
-                $copyId = Db::insert('resources', [
-                    'course_id' => $newId, 'section_id' => $newSection, 'type' => $r['type'], 'title' => $r['title'],
-                    'description' => $r['description'], 'data' => '{}', 'sort' => $r['sort'], 'visible' => $r['visible'],
-                    'created_at' => $now, 'updated_at' => $now,
-                ]);
-                // Copia los archivos y actualiza las referencias file_id del JSON.
-                $map = [];
-                foreach (Files::forContext('resource', (int)$r['id']) as $f) {
-                    $map[(int)$f['id']] = Files::copy((int)$f['id'], 'resource', $copyId);
-                }
-                $data = $r['data'];
-                if (isset($data['file_id']) && isset($map[(int)$data['file_id']])) {
-                    $data['file_id'] = $map[(int)$data['file_id']];
-                }
-                $copy = self::resource($copyId);
-                $r['data'] = $data;
-                $data = self::type($r)->duplicate($r, $copy);
-                Db::update('resources', ['data' => json_encode($data, JSON_UNESCAPED_UNICODE)], 'id = ?', [$copyId]);
-            }
+            self::duplicateSection((int)$s['id'], $newId, $s['title'], (int)$s['sort']);
         }
         do_action('course_duplicated', $courseId, $newId);
         return $newId;
+    }
+
+    /** Copia un apartado con sus contenidos (y archivos) en $courseId. Devuelve el id nuevo. */
+    public static function duplicateSection(int $sectionId, int $courseId, string $title, int $sort): int
+    {
+        $s = self::section($sectionId);
+        $now = time();
+        $newSection = Db::insert('sections', [
+            'course_id' => $courseId, 'title' => mb_substr($title, 0, 200), 'summary' => $s['summary'], 'sort' => $sort, 'visible' => $s['visible'],
+        ]);
+        foreach (Db::all('SELECT id FROM resources WHERE section_id = ? ORDER BY sort, id', [$sectionId]) as $row) {
+            $r = self::resource((int)$row['id']);
+            $copyId = Db::insert('resources', [
+                'course_id' => $courseId, 'section_id' => $newSection, 'type' => $r['type'], 'title' => $r['title'],
+                'description' => $r['description'], 'data' => '{}', 'sort' => $r['sort'], 'visible' => $r['visible'],
+                'created_at' => $now, 'updated_at' => $now,
+            ]);
+            // Copia los archivos y actualiza las referencias file_id del JSON.
+            $map = [];
+            foreach (Files::forContext('resource', (int)$r['id']) as $f) {
+                $map[(int)$f['id']] = Files::copy((int)$f['id'], 'resource', $copyId);
+            }
+            $data = $r['data'];
+            if (isset($data['file_id']) && isset($map[(int)$data['file_id']])) {
+                $data['file_id'] = $map[(int)$data['file_id']];
+            }
+            $copy = self::resource($copyId);
+            $r['data'] = $data;
+            $data = self::type($r)->duplicate($r, $copy);
+            Db::update('resources', ['data' => json_encode($data, JSON_UNESCAPED_UNICODE)], 'id = ?', [$copyId]);
+        }
+        return $newSection;
+    }
+
+    /** Vuelve a numerar el orden (10, 20, 30…) de las filas de un grupo. */
+    public static function renumber(string $table, string $scopeCol, int $scopeId): void
+    {
+        $ids = Db::col("SELECT id FROM $table WHERE $scopeCol = ? ORDER BY sort, id", [$scopeId]);
+        foreach ($ids as $i => $rid) {
+            Db::q("UPDATE $table SET sort = ? WHERE id = ?", [($i + 1) * 10, (int)$rid]);
+        }
     }
 
     /** Mueve una fila arriba (-1) o abajo (+1) dentro de su grupo. */

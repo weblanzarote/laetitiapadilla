@@ -82,7 +82,7 @@ Router::add('course/edit', function () {
                 $data['sort'] = (int)Db::val('SELECT COALESCE(MAX(sort), 0) FROM courses') + 10;
                 $id = Db::insert('courses', $data);
                 Db::insert('sections', ['course_id' => $id, 'title' => 'Presentación', 'summary' => '', 'sort' => 10, 'visible' => 1]);
-                flash('ok', 'Curso creado. Ahora añade unidades y contenidos.');
+                flash('ok', 'Curso creado. Ahora añade apartados y contenidos.');
             }
             Courses::saveCover($id, $cover[0] ?? null, !empty($_POST['cover_remove']));
             do_action('course_saved', $id, !$course);
@@ -150,14 +150,14 @@ Router::add('course/unenrol', function () {
     back('course/participants', ['id' => $course['id']]);
 }, 'teacher');
 
-// ─── Unidades ────────────────────────────────────────────────────
+// ─── Apartados (sections) ────────────────────────────────────────
 
 Router::add('section/save', function () {
     $section = pint('id') ? Courses::section(pint('id')) : null;
     $course = course_or_404($section ? (int)$section['course_id'] : pint('course_id'));
     $title = p('title');
     if ($title === '') {
-        flash('error', 'La unidad necesita un título.');
+        flash('error', 'El apartado necesita un título.');
         redirect('course', ['id' => $course['id']]);
     }
     $data = ['title' => mb_substr($title, 0, 200), 'summary' => Html::clean((string)($_POST['summary'] ?? ''))];
@@ -175,7 +175,7 @@ Router::add('section/delete', function () {
     $section = Courses::section(pint('id'));
     if ($section) {
         Courses::deleteSection((int)$section['id']);
-        flash('ok', 'Unidad borrada.');
+        flash('ok', 'Apartado borrado.');
         redirect('course', ['id' => $section['course_id']]);
     }
     redirect();
@@ -188,6 +188,18 @@ Router::add('section/move', function () {
         redirect_to(url('course', ['id' => $section['course_id']]) . '#s' . $section['id']);
     }
     redirect();
+}, 'teacher');
+
+Router::add('section/duplicate', function () {
+    $section = Courses::section(pint('id'));
+    if (!$section) {
+        redirect();
+    }
+    $cid = (int)$section['course_id'];
+    $id = Courses::duplicateSection((int)$section['id'], $cid, $section['title'] . ' (copia)', (int)$section['sort'] + 1);
+    Courses::renumber('sections', 'course_id', $cid);
+    flash('ok', 'Apartado duplicado con todo su contenido. Cámbiale el título con el lápiz.');
+    redirect_to(url('course', ['id' => $cid]) . '#s' . $id);
 }, 'teacher');
 
 Router::add('section/toggle', function () {
@@ -242,7 +254,7 @@ Router::add('resource/edit', function () {
         $section = Courses::section(gint('section_id'));
         $type = ResourceTypes::get(g('type'));
         if (!$section || !$type) {
-            throw new HttpError('Elige una unidad y un tipo de contenido.', 404);
+            throw new HttpError('Elige un apartado y un tipo de contenido.', 404);
         }
         $res = ['id' => 0, 'type' => $type->id(), 'title' => '', 'description' => '', 'data' => [], 'visible' => 1,
             'section_id' => (int)$section['id'], 'course_id' => (int)$section['course_id']];
@@ -313,6 +325,18 @@ Router::add('resource/delete', function () {
 Router::add('resource/move', function () {
     $res = resource_or_404(pint('id'));
     Courses::move('resources', (int)$res['id'], 'section_id', pint('dir') < 0 ? -1 : 1);
+    redirect_to(url('course', ['id' => $res['course_id']]) . '#r' . $res['id']);
+}, 'teacher');
+
+Router::add('resource/section', function () {
+    $res = resource_or_404(pint('id'));
+    $section = Courses::section(pint('section_id'));
+    if ($section && (int)$section['course_id'] === (int)$res['course_id'] && (int)$section['id'] !== (int)$res['section_id']) {
+        Db::update('resources', [
+            'section_id' => $section['id'], 'sort' => Courses::nextSort('resources', 'section_id', (int)$section['id']), 'updated_at' => time(),
+        ], 'id = ?', [$res['id']]);
+        flash('ok', '«' . $res['title'] . '» movido a «' . $section['title'] . '».');
+    }
     redirect_to(url('course', ['id' => $res['course_id']]) . '#r' . $res['id']);
 }, 'teacher');
 

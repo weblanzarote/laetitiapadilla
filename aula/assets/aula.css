@@ -1419,7 +1419,38 @@ input[type=file] {
 
 .card.unit {
     padding: 0;
-    overflow: hidden;
+}
+
+.card.unit > :first-child {
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+/* Menú «Mover a otro apartado» de cada contenido */
+.move-menu > summary.icon-btn {
+    padding: 0;
+    gap: 0;
+    border-radius: 50%;
+    font-size: .9rem;
+    color: var(--c-muted);
+}
+
+.move-menu[open] {
+    z-index: 130;
+}
+
+.move-menu[open] > summary.icon-btn {
+    background: var(--c-blue-soft);
+    color: var(--c-navy);
+}
+
+.move-menu .dropdown-menu {
+    min-width: 240px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.move-menu .inline-post {
+    display: block;
 }
 
 .unit.is-hidden,

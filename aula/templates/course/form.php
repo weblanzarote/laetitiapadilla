@@ -52,12 +52,12 @@
 <?php if ($course): ?>
     <div class="card">
         <h2 class="card-title"><?= icon('clone') ?> Duplicar para otra edición</h2>
-        <p class="muted">Crea una copia con todas las unidades y contenidos, pero sin alumnos. Ideal para reutilizar el curso el año que viene.</p>
+        <p class="muted">Crea una copia con todos los apartados y contenidos, pero sin alumnos. Ideal para reutilizar el curso el año que viene.</p>
         <?= post_button('course/duplicate', ['id' => $course['id']], icon('clone') . ' Duplicar curso', 'btn', '', '¿Duplicar «' . $course['title'] . '»?') ?>
     </div>
     <div class="card danger-zone">
         <h2 class="card-title"><?= icon('triangle-exclamation') ?> Borrar el curso</h2>
-        <p class="muted">Se borran sus unidades, contenidos y archivos, y se da de baja a todo el alumnado. No se puede deshacer.</p>
+        <p class="muted">Se borran sus apartados, contenidos y archivos, y se da de baja a todo el alumnado. No se puede deshacer.</p>
         <form method="post" action="<?= url('course/delete') ?>" class="inline-form">
             <?= csrf_field() ?>
             <input type="hidden" name="id" value="<?= (int)$course['id'] ?>">

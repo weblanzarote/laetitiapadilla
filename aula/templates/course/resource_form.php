@@ -23,7 +23,7 @@ $action = $res['id'] ? url('resource/edit', ['id' => $res['id']]) : url('resourc
 
     <div class="field-row">
         <div class="field">
-            <label for="section_id">Unidad</label>
+            <label for="section_id">Apartado</label>
             <select id="section_id" name="section_id">
                 <?php foreach ($sections as $s): ?>
                     <option value="<?= (int)$s['id'] ?>" <?= (int)$s['id'] === (int)$res['section_id'] ? 'selected' : '' ?>><?= e($s['title']) ?></option>

@@ -29,9 +29,11 @@ CyberPanel o crear una base de datos MySQL y configurarla en `aula/config.local.
 
 - **Crear un curso**: Gestión › Nuevo curso. Cada curso tiene un **código de inscripción**
   (p. ej. `FRB1-2026`). Se pasa el código o el «enlace de registro» al alumnado.
-- **Unidades y contenidos**: dentro del curso, «Añadir unidad» y, en cada unidad,
-  «Añadir contenido»: PDF, audio, vídeo, página de texto, enlace, archivo o paquete SCORM.
-  Todo se puede ocultar, ordenar con las flechas y editar.
+- **Apartados y contenidos**: dentro del curso, «Nuevo apartado» (Gramática, Música, Unité 1…)
+  y, en cada apartado, «Añadir contenido»: PDF, audio, vídeo, página de texto, enlace, archivo
+  o paquete SCORM. Todo se puede ocultar, ordenar con las flechas y editar.
+- **Duplicar un apartado** con todo su contenido: botón de copiar en la cabecera del apartado.
+- **Mover un contenido a otro apartado**: botón de carpeta junto al contenido.
 - **Portada del curso**: Ajustes del curso › Portada (o «Cambiar portada» en la cabecera).
   Se sube una foto horizontal o se elige uno de los diseños de serie.
 - **Imágenes y fichas** (archivo JPG/PNG): se ven a todo el ancho; al pulsarlas se abren a
