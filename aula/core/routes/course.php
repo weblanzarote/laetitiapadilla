@@ -328,6 +328,15 @@ Router::add('resource/move', function () {
     redirect_to(url('course', ['id' => $res['course_id']]) . '#r' . $res['id']);
 }, 'teacher');
 
+Router::add('resource/duplicate', function () {
+    $res = resource_or_404(pint('id'));
+    $sid = (int)$res['section_id'];
+    $id = Courses::duplicateResource($res, (int)$res['course_id'], $sid, $res['title'] . ' (copia)', (int)$res['sort'] + 1);
+    Courses::renumber('resources', 'section_id', $sid);
+    flash('ok', 'Contenido duplicado. Edita la copia con el lápiz para cambiarle el título o el archivo.');
+    redirect_to(url('course', ['id' => $res['course_id']]) . '#r' . $id);
+}, 'teacher');
+
 Router::add('resource/section', function () {
     $res = resource_or_404(pint('id'));
     $section = Courses::section(pint('section_id'));

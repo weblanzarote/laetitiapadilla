@@ -308,32 +308,39 @@ class Courses
     public static function duplicateSection(int $sectionId, int $courseId, string $title, int $sort): int
     {
         $s = self::section($sectionId);
-        $now = time();
         $newSection = Db::insert('sections', [
             'course_id' => $courseId, 'title' => mb_substr($title, 0, 200), 'summary' => $s['summary'], 'sort' => $sort, 'visible' => $s['visible'],
         ]);
         foreach (Db::all('SELECT id FROM resources WHERE section_id = ? ORDER BY sort, id', [$sectionId]) as $row) {
             $r = self::resource((int)$row['id']);
-            $copyId = Db::insert('resources', [
-                'course_id' => $courseId, 'section_id' => $newSection, 'type' => $r['type'], 'title' => $r['title'],
-                'description' => $r['description'], 'data' => '{}', 'sort' => $r['sort'], 'visible' => $r['visible'],
-                'created_at' => $now, 'updated_at' => $now,
-            ]);
-            // Copia los archivos y actualiza las referencias file_id del JSON.
-            $map = [];
-            foreach (Files::forContext('resource', (int)$r['id']) as $f) {
-                $map[(int)$f['id']] = Files::copy((int)$f['id'], 'resource', $copyId);
-            }
-            $data = $r['data'];
-            if (isset($data['file_id']) && isset($map[(int)$data['file_id']])) {
-                $data['file_id'] = $map[(int)$data['file_id']];
-            }
-            $copy = self::resource($copyId);
-            $r['data'] = $data;
-            $data = self::type($r)->duplicate($r, $copy);
-            Db::update('resources', ['data' => json_encode($data, JSON_UNESCAPED_UNICODE)], 'id = ?', [$copyId]);
+            self::duplicateResource($r, $courseId, $newSection, $r['title'], (int)$r['sort']);
         }
         return $newSection;
+    }
+
+    /** Copia un contenido (y sus archivos) en el apartado $sectionId. Devuelve el id nuevo. */
+    public static function duplicateResource(array $r, int $courseId, int $sectionId, string $title, int $sort): int
+    {
+        $now = time();
+        $copyId = Db::insert('resources', [
+            'course_id' => $courseId, 'section_id' => $sectionId, 'type' => $r['type'], 'title' => mb_substr($title, 0, 200),
+            'description' => $r['description'], 'data' => '{}', 'sort' => $sort, 'visible' => $r['visible'],
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+        // Copia los archivos y actualiza las referencias file_id del JSON.
+        $map = [];
+        foreach (Files::forContext('resource', (int)$r['id']) as $f) {
+            $map[(int)$f['id']] = Files::copy((int)$f['id'], 'resource', $copyId);
+        }
+        $data = $r['data'];
+        if (isset($data['file_id']) && isset($map[(int)$data['file_id']])) {
+            $data['file_id'] = $map[(int)$data['file_id']];
+        }
+        $copy = self::resource($copyId);
+        $r['data'] = $data;
+        $data = self::type($r)->duplicate($r, $copy);
+        Db::update('resources', ['data' => json_encode($data, JSON_UNESCAPED_UNICODE)], 'id = ?', [$copyId]);
+        return $copyId;
     }
 
     /** Vuelve a numerar el orden (10, 20, 30…) de las filas de un grupo. */

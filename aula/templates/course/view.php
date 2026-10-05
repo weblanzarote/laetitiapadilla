@@ -113,6 +113,7 @@ $cid = (int)$course['id'];
                                     </details>
                                 <?php endif; ?>
                                 <a class="icon-btn" href="<?= url('resource/edit', ['id' => $rid]) ?>" title="Editar" aria-label="Editar"><?= icon('pen') ?></a>
+                                <?= post_button('resource/duplicate', ['id' => $rid], icon('clone'), 'icon-btn', 'Duplicar') ?>
                                 <?= post_button('resource/delete', ['id' => $rid], icon('trash'), 'icon-btn icon-danger', 'Borrar', '¿Borrar «' . $r['title'] . '»?') ?>
                             </div>
                         <?php endif; ?>

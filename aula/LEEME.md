@@ -32,7 +32,8 @@ CyberPanel o crear una base de datos MySQL y configurarla en `aula/config.local.
 - **Apartados y contenidos**: dentro del curso, «Nuevo apartado» (Gramática, Música, Unité 1…)
   y, en cada apartado, «Añadir contenido»: PDF, audio, vídeo, página de texto, enlace, archivo
   o paquete SCORM. Todo se puede ocultar, ordenar con las flechas y editar.
-- **Duplicar un apartado** con todo su contenido: botón de copiar en la cabecera del apartado.
+- **Duplicar** un apartado con todo su contenido (botón de copiar en su cabecera) o un solo
+  contenido (botón de copiar junto a él). La copia aparece justo debajo con «(copia)».
 - **Mover un contenido a otro apartado**: botón de carpeta junto al contenido.
 - **Portada del curso**: Ajustes del curso › Portada (o «Cambiar portada» en la cabecera).
   Se sube una foto horizontal o se elige uno de los diseños de serie.
