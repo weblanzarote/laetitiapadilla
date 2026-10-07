@@ -233,13 +233,104 @@ class LinkResource extends ResourceType
     public function id(): string { return 'link'; }
     public function label(): string { return 'Enlace web'; }
     public function icon(): string { return 'link'; }
-    public function help(): string { return 'Una web externa: un ejercicio en línea, un artículo, un Genially…'; }
+    public function help(): string { return 'Una web externa: un ejercicio en línea, un artículo, un Genially, una lista de Spotify…'; }
 
     public function form(array $res): string
     {
         return '<div class="field"><label for="link_url">Dirección (URL)</label>'
-            . '<input type="url" id="link_url" name="link_url" value="' . e($res['data']['url'] ?? '') . '" required placeholder="https://…"></div>'
+            . '<input type="url" id="link_url" name="link_url" value="' . e($res['data']['url'] ?? '') . '" required placeholder="https://…">'
+            . '<small class="hint">Spotify, Deezer, SoundCloud, YouTube, Vimeo, Google Docs/Slides/Forms/Drive y Canva se muestran con su propio reproductor o visor.</small></div>'
             . '<label class="check"><input type="checkbox" name="embed" value="1" ' . (!empty($res['data']['embed']) ? 'checked' : '') . '> Mostrar la web dentro del aula (solo si la web lo permite; si no, se abre en otra pestaña)</label>';
+    }
+
+    /**
+     * Webs conocidas que tienen su propia versión para incrustar.
+     * Devuelve [nombre, src, altura] (altura en px; 0 = formato 16:9; null = alto de página) o null.
+     */
+    public static function provider(string $url): ?array
+    {
+        if ($v = VideoResource::embedUrl($url)) {
+            return [str_contains($url, 'vimeo') ? 'Vimeo' : 'YouTube', $v, 0];
+        }
+        if (preg_match('~open\.spotify\.com/(?:intl-[a-z-]+/)?(?:embed/)?(track|album|playlist|episode|show|artist)/([A-Za-z0-9]+)~i', $url, $m)) {
+            $short = in_array($m[1], ['track', 'episode'], true);
+            return ['Spotify', 'https://open.spotify.com/embed/' . $m[1] . '/' . $m[2], $short ? 152 : 452];
+        }
+        if (preg_match('~deezer\.com/(?:[a-z]{2}/)?(track|album|playlist|episode|show|artist)/(\d+)~i', $url, $m)) {
+            return ['Deezer', 'https://widget.deezer.com/widget/auto/' . $m[1] . '/' . $m[2], $m[1] === 'track' ? 152 : 400];
+        }
+        if (preg_match('~^https?://(?:www\.|m\.)?soundcloud\.com/[^/?#]+/[^?#]+~i', $url, $m)) {
+            return ['SoundCloud', 'https://w.soundcloud.com/player/?url=' . rawurlencode($m[0]), str_contains($m[0], '/sets/') ? 450 : 166];
+        }
+        if (preg_match('~docs\.google\.com/presentation/d/([\w-]+)~', $url, $m)) {
+            return ['Google Slides', 'https://docs.google.com/presentation/d/' . $m[1] . '/embed', 0];
+        }
+        if (preg_match('~docs\.google\.com/(document|spreadsheets)/d/([\w-]+)~', $url, $m)) {
+            return [$m[1] === 'document' ? 'Google Docs' : 'Google Sheets', 'https://docs.google.com/' . $m[1] . '/d/' . $m[2] . '/preview', null];
+        }
+        if (preg_match('~docs\.google\.com/forms/d/e/([\w-]+)~', $url, $m)) {
+            return ['Google Forms', 'https://docs.google.com/forms/d/e/' . $m[1] . '/viewform?embedded=true', null];
+        }
+        if (preg_match('~drive\.google\.com/file/d/([\w-]+)~', $url, $m)) {
+            return ['Google Drive', 'https://drive.google.com/file/d/' . $m[1] . '/preview', null];
+        }
+        if (preg_match('~canva\.com/design/([\w-]+)/([\w-]+)~', $url, $m)) {
+            return ['Canva', 'https://www.canva.com/design/' . $m[1] . '/' . $m[2] . '/view?embed', 0];
+        }
+        return null;
+    }
+
+    /**
+     * ¿La web prohíbe que se muestre dentro de otra (X-Frame-Options / frame-ancestors)?
+     * Si no se puede comprobar, se da por buena.
+     */
+    private static function blocksFraming(string $url): bool
+    {
+        if (!function_exists('curl_init')) {
+            return false;
+        }
+        $headers = [];
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_TIMEOUT => 6,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36',
+            CURLOPT_HEADERFUNCTION => function ($ch, $line) use (&$headers) {
+                if (str_starts_with($line, 'HTTP/')) {
+                    $headers = []; // nueva respuesta (redirección): solo cuenta la última
+                } elseif (($p = strpos($line, ':')) !== false) {
+                    $headers[strtolower(trim(substr($line, 0, $p)))][] = trim(substr($line, $p + 1));
+                }
+                return strlen($line);
+            },
+            CURLOPT_WRITEFUNCTION => fn($ch, $data) => 0, // basta con las cabeceras: corta la descarga
+        ]);
+        curl_exec($ch);
+
+        foreach ($headers['content-security-policy'] ?? [] as $csp) {
+            if (preg_match('~frame-ancestors([^;]*)~i', $csp, $m)) {
+                $host = strtolower(explode(':', $_SERVER['HTTP_HOST'] ?? '')[0]);
+                foreach (preg_split('~\s+~', trim($m[1])) as $src) {
+                    $src = strtolower(trim($src, "'"));
+                    if (in_array($src, ['*', 'https:', 'http:'], true)) {
+                        return false;
+                    }
+                    $h = (string)(parse_url(str_contains($src, '://') ? $src : 'https://' . $src, PHP_URL_HOST) ?: '');
+                    if ($h !== '' && $host !== '' && ($h === $host || (str_starts_with($h, '*.') && str_ends_with($host, substr($h, 1))))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        foreach ($headers['x-frame-options'] ?? [] as $xfo) {
+            if (preg_match('~deny|sameorigin~i', $xfo)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function save(array $res, bool $isNew): array
@@ -248,7 +339,12 @@ class LinkResource extends ResourceType
         if (!preg_match('~^https?://~i', $url) || !filter_var($url, FILTER_VALIDATE_URL)) {
             throw new UserError('Escribe una dirección completa que empiece por https://');
         }
-        return ['url' => $url, 'embed' => !empty($_POST['embed'])];
+        $embed = !empty($_POST['embed']);
+        if ($embed && !self::provider($url) && self::blocksFraming($url)) {
+            $embed = false;
+            flash('info', 'La web ' . parse_url($url, PHP_URL_HOST) . ' no permite mostrarse dentro de otra página, así que se abrirá en otra pestaña.');
+        }
+        return ['url' => $url, 'embed' => $embed];
     }
 
     public function redirect(array $res): ?string
@@ -263,14 +359,32 @@ class LinkResource extends ResourceType
 
     public function meta(array $res): string
     {
-        return (string)(parse_url((string)($res['data']['url'] ?? ''), PHP_URL_HOST) ?: '');
+        $url = (string)($res['data']['url'] ?? '');
+        return self::provider($url)[0] ?? (string)(parse_url($url, PHP_URL_HOST) ?: '');
     }
 
     public function render(array $res, array $course): string
     {
         $url = (string)($res['data']['url'] ?? '');
-        return '<p><a class="btn btn-ghost" href="' . e($url) . '" target="_blank" rel="noopener">' . icon('up-right-from-square') . ' Abrir en otra pestaña</a></p>'
-            . '<div class="embed-frame"><iframe src="' . e($url) . '" title="' . e($res['title']) . '" loading="lazy" referrerpolicy="no-referrer"></iframe></div>';
+        $open = '<p><a class="btn btn-ghost" href="' . e($url) . '" target="_blank" rel="noopener">' . icon('up-right-from-square') . ' Abrir en otra pestaña</a></p>';
+        if (empty($res['data']['embed'])) {
+            return $open;
+        }
+        $title = e($res['title']);
+        if ($p = self::provider($url)) {
+            [, $src, $height] = $p;
+            $attrs = ' src="' . e($src) . '" title="' . $title . '" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"';
+            if ($height === 0) {
+                return $open . '<div class="video-frame"><iframe' . $attrs . '></iframe></div>';
+            }
+            if ($height) {
+                return $open . '<div class="embed-player"><iframe' . $attrs . ' style="height:' . (int)$height . 'px"></iframe></div>';
+            }
+            return $open . '<div class="embed-frame"><iframe' . $attrs . '></iframe></div>';
+        }
+        return $open
+            . '<div class="embed-frame"><iframe src="' . e($url) . '" title="' . $title . '" loading="lazy" referrerpolicy="no-referrer"></iframe></div>'
+            . '<p class="muted small pdf-hint">¿No se ve la web? Usa «Abrir en otra pestaña».</p>';
     }
 }
 

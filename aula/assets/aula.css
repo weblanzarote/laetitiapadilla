@@ -1689,6 +1689,15 @@ input[type=file] {
     margin-top: .5rem;
 }
 
+/* Reproductores de Spotify, Deezer, SoundCloud… (ya traen su propio fondo) */
+.embed-player iframe {
+    display: block;
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
 .video-frame {
     position: relative;
     border-radius: var(--radius);
