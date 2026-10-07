@@ -1194,6 +1194,19 @@ input[type=file] {
     flex: 1;
 }
 
+.mini-progress {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    flex-shrink: 0;
+}
+
+.mini-progress .progress-sm {
+    min-width: 60px;
+    width: 60px;
+    margin: 0;
+}
+
 .join-form label {
     display: block;
     margin-bottom: .6rem;
@@ -2281,6 +2294,18 @@ input[type=file] {
 
 .msg-head strong {
     color: var(--c-navy);
+}
+
+.msg-head .msg-author {
+    text-decoration: none;
+}
+
+.msg-head .msg-author:hover strong {
+    text-decoration: underline;
+}
+
+a.avatar {
+    text-decoration: none;
 }
 
 .msg-mine .msg-head strong {

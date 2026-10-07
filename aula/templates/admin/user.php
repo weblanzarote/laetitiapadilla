@@ -63,9 +63,10 @@ $action = url('admin/user', $u ? ['id' => $u['id']] : []);
                 <h2 class="card-title"><?= icon('book-open') ?> Cursos</h2>
                 <?php if (!$enrolled): ?><p class="muted">No está en ningún curso.</p><?php endif; ?>
                 <ul class="mini-list">
-                    <?php foreach ($enrolled as $c): ?>
+                    <?php foreach ($enrolled as $c): [$done, $total] = $c['progress']; $pct = $total ? (int)round($done * 100 / $total) : 0; ?>
                         <li>
                             <a href="<?= url('course', ['id' => $c['id']]) ?>"><?= e($c['title']) ?></a>
+                            <span class="mini-progress" title="Contenidos completados"><span class="progress progress-sm"><span style="width: <?= $pct ?>%"></span></span><small class="muted"><?= $done ?>/<?= $total ?></small></span>
                             <form method="post" action="<?= e($action) ?>" class="inline-post" data-confirm="¿Dar de baja de este curso?">
                                 <?= csrf_field() ?><input type="hidden" name="action" value="unenrol"><input type="hidden" name="course_id" value="<?= (int)$c['id'] ?>">
                                 <button class="icon-btn icon-danger" title="Dar de baja" aria-label="Dar de baja"><?= icon('xmark') ?></button>
@@ -81,6 +82,7 @@ $action = url('admin/user', $u ? ['id' => $u['id']] : []);
                     <button class="btn btn-sm" type="submit">Inscribir</button>
                 </form>
             </div>
+            <?= Hooks::capture('user_side', $u) ?>
             <div class="card">
                 <h2 class="card-title"><?= icon('key') ?> Acceso</h2>
                 <p class="muted">Si no recibe el email de recuperación, genera un enlace y pásaselo tú.</p>

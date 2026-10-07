@@ -2,12 +2,19 @@
 $mine = (int)$m['user_id'] === uid();
 $deleted = $m['body'] === '[deleted]';
 $canDelete = !$deleted && (is_teacher() || ($mine && time() - (int)$m['created_at'] < 900));
+// El profesorado puede pulsar en el nombre del alumno/a para abrir su ficha
+$profile = !$mine && is_teacher() && $m['user_id'] && ($m['author_role'] ?? '') === 'student' ? url('admin/user', ['id' => $m['user_id']]) : null;
 ?>
 <div class="msg<?= $mine ? ' msg-mine' : '' ?>" id="m<?= (int)$m['id'] ?>" data-id="<?= (int)$m['id'] ?>">
-    <?php if (!$mine): ?><span class="avatar avatar-sm"><?= e(initials($m['author'] ?? '?')) ?></span><?php endif; ?>
+    <?php if ($profile): ?><a class="avatar avatar-sm" href="<?= e($profile) ?>" title="Ver ficha"><?= e(initials($m['author'] ?? '?')) ?></a>
+    <?php elseif (!$mine): ?><span class="avatar avatar-sm"><?= e(initials($m['author'] ?? '?')) ?></span><?php endif; ?>
     <div class="msg-bubble">
         <div class="msg-head">
-            <strong><?= $mine ? 'Tú' : e($m['author'] ?? 'Cuenta eliminada') ?></strong>
+            <?php if ($profile): ?>
+                <a class="msg-author" href="<?= e($profile) ?>" title="Ver ficha"><strong><?= e($m['author']) ?></strong></a>
+            <?php else: ?>
+                <strong><?= $mine ? 'Tú' : e($m['author'] ?? 'Cuenta eliminada') ?></strong>
+            <?php endif; ?>
             <?php if (!$mine && in_array($m['author_role'] ?? '', ['teacher', 'admin'], true)): ?><span class="tag tag-sm">Docente</span><?php endif; ?>
             <time datetime="<?= date('c', (int)$m['created_at']) ?>"><?= fmt_date((int)$m['created_at'], 'relative') ?></time>
             <?php if ($canDelete): ?>

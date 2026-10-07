@@ -5,6 +5,10 @@ foreach ($others as $o) {
     if (in_array($o['role'], ['teacher', 'admin'], true)) { $teacherOther = $o; break; }
 }
 $author = Db::one('SELECT id, name FROM users WHERE id = ?', [$conv['created_by']]);
+// Nombre que enlaza a la ficha (solo profesorado y solo para alumnado)
+$who = fn(array $p) => is_teacher() && $p['role'] === 'student' && $p['id']
+    ? '<a href="' . e(url('admin/user', ['id' => $p['id']])) . '" title="Ver ficha">' . e($p['name']) . '</a>'
+    : e($p['name']);
 ?>
 <div class="thread-head card">
     <div>
@@ -22,7 +26,7 @@ $author = Db::one('SELECT id, name FROM users WHERE id = ?', [$conv['created_by'
             <?php if ($conv['kind'] === 'announcement'): ?>
                 Enviado a <?= plural(count($others), 'persona', 'personas') ?>
             <?php else: ?>
-                Con <?= e($title) ?>
+                Con <?= is_teacher() && count($others) <= 3 ? implode(', ', array_map($who, $others)) : e($title) ?>
             <?php endif; ?>
         </p>
     </div>
@@ -34,7 +38,7 @@ $author = Db::one('SELECT id, name FROM users WHERE id = ?', [$conv['created_by'
 <?php if ($conv['kind'] === 'group' && is_teacher()): ?>
     <details class="card people">
         <summary><?= icon('users') ?> Participantes (<?= count($people) ?>)</summary>
-        <p><?= implode(', ', array_map(fn($p) => e($p['name']), $people)) ?></p>
+        <p><?= implode(', ', array_map($who, $people)) ?></p>
     </details>
 <?php endif; ?>
 

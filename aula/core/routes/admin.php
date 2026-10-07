@@ -117,6 +117,10 @@ Router::add('admin/user', function () {
     }
 
     $enrolled = $u ? Db::all('SELECT c.* FROM courses c JOIN enrolments e ON e.course_id = c.id WHERE e.user_id = ? ORDER BY c.title', [$u['id']]) : [];
+    foreach ($enrolled as &$c) {
+        $c['progress'] = Courses::progress((int)$c['id'], (int)$u['id']);
+    }
+    unset($c);
     View::page('admin/user', [
         'u' => $u, 'v' => $v, 'error' => $error, 'resetLink' => $resetLink, 'enrolled' => $enrolled, 'courses' => Courses::all(),
     ], $u ? $u['name'] : 'Nueva cuenta', ['crumbs' => [['Inicio', url()], ['Alumnado', url('admin/users')]]]);

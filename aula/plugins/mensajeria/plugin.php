@@ -434,6 +434,33 @@ add_action('user_actions', function (array $u) {
     }
 });
 
+// Ficha del alumno/a: últimas conversaciones en las que estamos los dos (sin avisos)
+add_action('user_side', function (array $u) {
+    if ((int)$u['id'] === uid()) {
+        return;
+    }
+    $convs = Db::all(
+        "SELECT c.* FROM msg_conversations c
+         JOIN msg_participants me ON me.conversation_id = c.id AND me.user_id = ?
+         JOIN msg_participants p ON p.conversation_id = c.id AND p.user_id = ?
+         WHERE c.kind <> 'announcement' AND c.last_message_id > 0
+         ORDER BY c.last_message_at DESC LIMIT 6",
+        [uid(), $u['id']]
+    );
+    echo '<div class="card"><h2 class="card-title">' . icon('comments') . ' Conversaciones</h2>';
+    if (!$convs) {
+        echo '<p class="muted">Todavía no hay mensajes con esta persona.</p>';
+    } else {
+        echo '<ul class="mini-conv">';
+        foreach ($convs as $c) {
+            echo '<li><a href="' . e(url('messages/view', ['id' => $c['id']])) . '"><strong>' . e($c['subject']) . '</strong>'
+                . '<small class="muted">' . fmt_date((int)$c['last_message_at'], 'relative') . '</small></a></li>';
+        }
+        echo '</ul>';
+    }
+    echo '</div>';
+});
+
 // ─── Rutas ───────────────────────────────────────────────────────
 
 function msg_conv_or_404(int $id): array
