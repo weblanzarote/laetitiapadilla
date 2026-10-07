@@ -7,7 +7,7 @@ foreach ($others as $o) {
 $author = Db::one('SELECT id, name FROM users WHERE id = ?', [$conv['created_by']]);
 // Nombre que enlaza a la ficha (solo profesorado y solo para alumnado)
 $who = fn(array $p) => is_teacher() && $p['role'] === 'student' && $p['id']
-    ? '<a href="' . e(url('admin/user', ['id' => $p['id']])) . '" title="Ver ficha">' . e($p['name']) . '</a>'
+    ? '<a class="person-link" href="' . e(url('admin/user', ['id' => $p['id']])) . '" title="Ver ficha">' . e($p['name']) . '</a>'
     : e($p['name']);
 ?>
 <div class="thread-head card">

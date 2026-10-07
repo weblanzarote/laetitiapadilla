@@ -2296,16 +2296,35 @@ input[type=file] {
     color: var(--c-navy);
 }
 
-.msg-head .msg-author {
-    text-decoration: none;
+/* Nombres de alumnado que abren su ficha (solo los ve el profesorado) */
+.person-link,
+.msg-head .person-link strong {
+    color: #2e6db4;
 }
 
-.msg-head .msg-author:hover strong {
-    text-decoration: underline;
+.person-link {
+    text-decoration: underline dotted;
+    text-decoration-color: rgba(46, 109, 180, .5);
+    text-underline-offset: 3px;
 }
 
-a.avatar {
+.person-link:hover,
+.person-link:hover strong {
+    color: var(--c-navy);
+    text-decoration-style: solid;
+}
+
+a.avatar-link {
     text-decoration: none;
+    background: var(--c-blue-soft);
+    color: #2e6db4;
+    border-color: var(--c-line-strong);
+    transition: background .15s, color .15s;
+}
+
+a.avatar-link:hover {
+    background: #2e6db4;
+    color: #fff;
 }
 
 .msg-mine .msg-head strong {

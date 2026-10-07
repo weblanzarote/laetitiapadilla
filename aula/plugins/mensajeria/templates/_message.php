@@ -6,12 +6,12 @@ $canDelete = !$deleted && (is_teacher() || ($mine && time() - (int)$m['created_a
 $profile = !$mine && is_teacher() && $m['user_id'] && ($m['author_role'] ?? '') === 'student' ? url('admin/user', ['id' => $m['user_id']]) : null;
 ?>
 <div class="msg<?= $mine ? ' msg-mine' : '' ?>" id="m<?= (int)$m['id'] ?>" data-id="<?= (int)$m['id'] ?>">
-    <?php if ($profile): ?><a class="avatar avatar-sm" href="<?= e($profile) ?>" title="Ver ficha"><?= e(initials($m['author'] ?? '?')) ?></a>
+    <?php if ($profile): ?><a class="avatar avatar-sm avatar-link" href="<?= e($profile) ?>" title="Ver ficha"><?= e(initials($m['author'] ?? '?')) ?></a>
     <?php elseif (!$mine): ?><span class="avatar avatar-sm"><?= e(initials($m['author'] ?? '?')) ?></span><?php endif; ?>
     <div class="msg-bubble">
         <div class="msg-head">
             <?php if ($profile): ?>
-                <a class="msg-author" href="<?= e($profile) ?>" title="Ver ficha"><strong><?= e($m['author']) ?></strong></a>
+                <a class="msg-author person-link" href="<?= e($profile) ?>" title="Ver ficha"><strong><?= e($m['author']) ?></strong></a>
             <?php else: ?>
                 <strong><?= $mine ? 'Tú' : e($m['author'] ?? 'Cuenta eliminada') ?></strong>
             <?php endif; ?>
