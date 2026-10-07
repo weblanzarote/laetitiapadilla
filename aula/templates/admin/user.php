@@ -74,13 +74,21 @@ $action = url('admin/user', $u ? ['id' => $u['id']] : []);
                         </li>
                     <?php endforeach; ?>
                 </ul>
-                <form method="post" action="<?= e($action) ?>" class="inline-form">
-                    <?= csrf_field() ?><input type="hidden" name="action" value="enrol">
-                    <select name="course_id" aria-label="Curso">
-                        <?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>"><?= e($c['title']) ?></option><?php endforeach; ?>
-                    </select>
-                    <button class="btn btn-sm" type="submit">Inscribir</button>
-                </form>
+                <?php
+                // Solo los cursos en los que todavía no está
+                $inIds = array_map(fn($c) => (int)$c['id'], $enrolled);
+                $others = array_filter($courses, fn($c) => !in_array((int)$c['id'], $inIds, true));
+                ?>
+                <?php if ($others): ?>
+                    <p class="muted small enrol-more"><?= $enrolled ? 'Inscribir también en:' : 'Inscribir en:' ?></p>
+                    <form method="post" action="<?= e($action) ?>" class="inline-form">
+                        <?= csrf_field() ?><input type="hidden" name="action" value="enrol">
+                        <select name="course_id" aria-label="Curso">
+                            <?php foreach ($others as $c): ?><option value="<?= (int)$c['id'] ?>"><?= e($c['title']) ?></option><?php endforeach; ?>
+                        </select>
+                        <button class="btn btn-sm" type="submit">Inscribir</button>
+                    </form>
+                <?php endif; ?>
             </div>
             <?= Hooks::capture('user_side', $u) ?>
             <div class="card">
