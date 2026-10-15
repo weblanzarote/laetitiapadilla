@@ -182,19 +182,139 @@ class Courses
         return $r ? self::decode($r) : null;
     }
 
-    /** Recursos del curso (visibles en apartados visibles si $includeHidden es false). */
+    /**
+     * Recursos del curso en el orden del índice: cada carpeta seguida de su contenido
+     * (con 'depth' = nivel dentro de carpetas). Si $includeHidden es false quita lo oculto
+     * y lo que está dentro de carpetas o apartados ocultos.
+     */
     public static function resources(int $courseId, bool $includeHidden): array
     {
         $sql = 'SELECT r.* FROM resources r JOIN sections s ON s.id = r.section_id WHERE r.course_id = ?';
         if (!$includeHidden) {
             $sql .= ' AND r.visible = 1 AND s.visible = 1';
         }
-        return array_map([self::class, 'decode'], Db::all($sql . ' ORDER BY s.sort, s.id, r.sort, r.id', [$courseId]));
+        $kids = [];
+        foreach (Db::all($sql . ' ORDER BY s.sort, s.id, r.sort, r.id', [$courseId]) as $r) {
+            $kids[(int)$r['parent_id']][] = self::decode($r);
+        }
+        $out = [];
+        $walk = function (array $list, int $depth) use (&$walk, &$out, $kids) {
+            foreach ($list as $r) {
+                $r['depth'] = $depth;
+                $out[] = $r;
+                if (isset($kids[(int)$r['id']]) && $depth < 20) {
+                    $walk($kids[(int)$r['id']], $depth + 1);
+                }
+            }
+        };
+        $walk($kids[0] ?? [], 0);
+        return $out;
     }
 
     public static function type(array $resource): ResourceType
     {
         return ResourceTypes::get($resource['type']) ?? new MissingResourceType($resource['type']);
+    }
+
+    // ─── Carpetas ─────────────────────────────────────────────────
+
+    public static function isFolder(array $r): bool
+    {
+        return $r['type'] === FolderResourceType::ID;
+    }
+
+    /** Carpetas que contienen al recurso, de la de fuera a la de dentro. */
+    public static function ancestors(array $res): array
+    {
+        $out = [];
+        for ($p = (int)$res['parent_id']; $p && count($out) < 20; $p = (int)$f['parent_id']) {
+            $f = self::resource($p);
+            if (!$f) {
+                break;
+            }
+            array_unshift($out, $f);
+        }
+        return $out;
+    }
+
+    /** Ids de todo lo que hay dentro de una carpeta (a cualquier nivel). */
+    public static function descendantIds(int $id): array
+    {
+        $out = [];
+        $level = [$id];
+        for ($i = 0; $level && $i < 20; $i++) {
+            $level = array_map('intval', Db::col(
+                'SELECT id FROM resources WHERE parent_id IN (' . implode(',', array_fill(0, count($level), '?')) . ')', $level
+            ));
+            $out = array_merge($out, $level);
+        }
+        return $out;
+    }
+
+    /**
+     * Sitios del curso donde puede ir un contenido, en orden: cada apartado y sus carpetas.
+     * Cada uno: section_id, parent_id (0 = suelto en el apartado), title, depth y
+     * path (ids de las carpetas desde la de fuera hasta esta).
+     */
+    public static function locations(int $courseId): array
+    {
+        $folders = [];
+        foreach (self::resources($courseId, true) as $r) {
+            if (self::isFolder($r)) {
+                $folders[(int)$r['section_id']][] = $r;
+            }
+        }
+        $out = [];
+        foreach (self::sections($courseId, true) as $s) {
+            $sid = (int)$s['id'];
+            $out[] = ['section_id' => $sid, 'parent_id' => 0, 'title' => $s['title'], 'depth' => 0, 'path' => []];
+            $path = [];
+            foreach ($folders[$sid] ?? [] as $f) {
+                $path = array_slice($path, 0, $f['depth']);
+                $path[] = (int)$f['id'];
+                $out[] = ['section_id' => $sid, 'parent_id' => (int)$f['id'], 'title' => $f['title'], 'depth' => $f['depth'] + 1, 'path' => $path];
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Comprueba un destino (apartado o carpeta del mismo curso) para el recurso.
+     * Devuelve [section_id, parent_id] o null si no vale (otro curso, no es carpeta,
+     * o es la propia carpeta o algo que está dentro de ella).
+     */
+    public static function validLocation(array $res, int $sectionId, int $parentId): ?array
+    {
+        if ($parentId) {
+            $folder = self::resource($parentId);
+            if (!$folder || !self::isFolder($folder) || (int)$folder['course_id'] !== (int)$res['course_id']) {
+                return null;
+            }
+            if (!empty($res['id']) && ($parentId === (int)$res['id'] || in_array($parentId, self::descendantIds((int)$res['id']), true))) {
+                return null;
+            }
+            return [(int)$folder['section_id'], $parentId];
+        }
+        $section = self::section($sectionId);
+        return $section && (int)$section['course_id'] === (int)$res['course_id'] ? [$sectionId, 0] : null;
+    }
+
+    /** Lleva un contenido (con todo lo que tenga dentro) al final de otro apartado o carpeta. */
+    public static function relocate(array $res, int $sectionId, int $parentId): bool
+    {
+        $to = self::validLocation($res, $sectionId, $parentId);
+        if (!$to || ($to[0] === (int)$res['section_id'] && $to[1] === (int)$res['parent_id'])) {
+            return false;
+        }
+        Db::update('resources', [
+            'section_id' => $to[0], 'parent_id' => $to[1],
+            'sort' => self::nextSort('resources', ['section_id' => $to[0], 'parent_id' => $to[1]]), 'updated_at' => time(),
+        ], 'id = ?', [$res['id']]);
+        $inside = self::descendantIds((int)$res['id']);
+        if ($inside && $to[0] !== (int)$res['section_id']) {
+            Db::q('UPDATE resources SET section_id = ? WHERE id IN (' . implode(',', $inside) . ')', [$to[0]]);
+        }
+        return true;
     }
 
     public static function canViewResource(array $res, array $u): bool
@@ -207,7 +327,15 @@ class Courses
             return true;
         }
         $section = self::section((int)$res['section_id']);
-        return (int)$res['visible'] === 1 && $section && (int)$section['visible'] === 1;
+        if ((int)$res['visible'] !== 1 || !$section || (int)$section['visible'] !== 1) {
+            return false;
+        }
+        foreach (self::ancestors($res) as $f) {
+            if ((int)$f['visible'] !== 1) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static function recordView(array $res, int $userId): void
@@ -240,18 +368,29 @@ class Courses
     {
         $resources = self::resources($courseId, false);
         $views = self::views($courseId, $userId);
-        $done = 0;
+        $done = $total = 0;
         foreach ($resources as $r) {
+            if (self::isFolder($r)) {
+                continue;
+            }
+            $total++;
             $st = self::type($r)->status($r, $userId, $views[(int)$r['id']] ?? null);
             if ($st && !empty($st['done'])) {
                 $done++;
             }
         }
-        return [$done, count($resources)];
+        return [$done, $total];
     }
 
+    /** Borra un recurso y, si es una carpeta, todo lo que tiene dentro. */
     public static function deleteResource(array $res): void
     {
+        foreach (Db::col('SELECT id FROM resources WHERE parent_id = ?', [$res['id']]) as $childId) {
+            $child = self::resource((int)$childId);
+            if ($child) {
+                self::deleteResource($child);
+            }
+        }
         self::type($res)->delete($res);
         Files::deleteContext('resource', (int)$res['id']);
         Db::delete('resource_views', 'resource_id = ?', [$res['id']]);
@@ -262,7 +401,10 @@ class Courses
     public static function deleteSection(int $sectionId): void
     {
         foreach (Db::all('SELECT id FROM resources WHERE section_id = ?', [$sectionId]) as $row) {
-            self::deleteResource(self::resource((int)$row['id']));
+            $res = self::resource((int)$row['id']);
+            if ($res) { // lo que estaba en una carpeta ya se borró con ella
+                self::deleteResource($res);
+            }
         }
         Db::delete('sections', 'id = ?', [$sectionId]);
     }
@@ -311,19 +453,22 @@ class Courses
         $newSection = Db::insert('sections', [
             'course_id' => $courseId, 'title' => mb_substr($title, 0, 200), 'summary' => $s['summary'], 'sort' => $sort, 'visible' => $s['visible'],
         ]);
-        foreach (Db::all('SELECT id FROM resources WHERE section_id = ? ORDER BY sort, id', [$sectionId]) as $row) {
+        foreach (Db::all('SELECT id FROM resources WHERE section_id = ? AND parent_id = 0 ORDER BY sort, id', [$sectionId]) as $row) {
             $r = self::resource((int)$row['id']);
             self::duplicateResource($r, $courseId, $newSection, $r['title'], (int)$r['sort']);
         }
         return $newSection;
     }
 
-    /** Copia un contenido (y sus archivos) en el apartado $sectionId. Devuelve el id nuevo. */
-    public static function duplicateResource(array $r, int $courseId, int $sectionId, string $title, int $sort): int
+    /**
+     * Copia un contenido (y sus archivos) en el apartado $sectionId, dentro de la carpeta
+     * $parentId si se indica. Las carpetas se copian con todo lo que tienen. Devuelve el id nuevo.
+     */
+    public static function duplicateResource(array $r, int $courseId, int $sectionId, string $title, int $sort, int $parentId = 0): int
     {
         $now = time();
         $copyId = Db::insert('resources', [
-            'course_id' => $courseId, 'section_id' => $sectionId, 'type' => $r['type'], 'title' => mb_substr($title, 0, 200),
+            'course_id' => $courseId, 'section_id' => $sectionId, 'parent_id' => $parentId, 'type' => $r['type'], 'title' => mb_substr($title, 0, 200),
             'description' => $r['description'], 'data' => '{}', 'sort' => $sort, 'visible' => $r['visible'],
             'created_at' => $now, 'updated_at' => $now,
         ]);
@@ -340,26 +485,37 @@ class Courses
         $r['data'] = $data;
         $data = self::type($r)->duplicate($r, $copy);
         Db::update('resources', ['data' => json_encode($data, JSON_UNESCAPED_UNICODE)], 'id = ?', [$copyId]);
+        foreach (Db::all('SELECT id FROM resources WHERE parent_id = ? ORDER BY sort, id', [$r['id']]) as $row) {
+            $child = self::resource((int)$row['id']);
+            self::duplicateResource($child, $courseId, $sectionId, $child['title'], (int)$child['sort'], $copyId);
+        }
         return $copyId;
     }
 
-    /** Vuelve a numerar el orden (10, 20, 30…) de las filas de un grupo. */
-    public static function renumber(string $table, string $scopeCol, int $scopeId): void
+    /** WHERE de un grupo de filas: ['course_id' => 3] o ['section_id' => 5, 'parent_id' => 0]. */
+    private static function scopeWhere(array $scope): string
     {
-        $ids = Db::col("SELECT id FROM $table WHERE $scopeCol = ? ORDER BY sort, id", [$scopeId]);
+        return implode(' AND ', array_map(fn($col) => "$col = ?", array_keys($scope)));
+    }
+
+    /** Vuelve a numerar el orden (10, 20, 30…) de las filas de un grupo. */
+    public static function renumber(string $table, array $scope): void
+    {
+        $ids = Db::col("SELECT id FROM $table WHERE " . self::scopeWhere($scope) . ' ORDER BY sort, id', array_values($scope));
         foreach ($ids as $i => $rid) {
             Db::q("UPDATE $table SET sort = ? WHERE id = ?", [($i + 1) * 10, (int)$rid]);
         }
     }
 
-    /** Mueve una fila arriba (-1) o abajo (+1) dentro de su grupo. */
-    public static function move(string $table, int $id, string $scopeCol, int $dir): void
+    /** Mueve una fila arriba (-1) o abajo (+1) dentro de su grupo (las filas con los mismos $scopeCols). */
+    public static function move(string $table, int $id, array $scopeCols, int $dir): void
     {
         $row = Db::one("SELECT * FROM $table WHERE id = ?", [$id]);
         if (!$row) {
             return;
         }
-        $ids = Db::col("SELECT id FROM $table WHERE $scopeCol = ? ORDER BY sort, id", [$row[$scopeCol]]);
+        $scope = array_intersect_key($row, array_flip($scopeCols));
+        $ids = Db::col("SELECT id FROM $table WHERE " . self::scopeWhere($scope) . ' ORDER BY sort, id', array_values($scope));
         $ids = array_map('intval', $ids);
         $pos = array_search($id, $ids, true);
         $swap = $pos + $dir;
@@ -372,8 +528,8 @@ class Courses
         }
     }
 
-    public static function nextSort(string $table, string $scopeCol, int $scopeId): int
+    public static function nextSort(string $table, array $scope): int
     {
-        return (int)Db::val("SELECT COALESCE(MAX(sort), 0) FROM $table WHERE $scopeCol = ?", [$scopeId]) + 10;
+        return (int)Db::val("SELECT COALESCE(MAX(sort), 0) FROM $table WHERE " . self::scopeWhere($scope), array_values($scope)) + 10;
     }
 }

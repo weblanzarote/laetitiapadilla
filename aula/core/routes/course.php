@@ -27,16 +27,37 @@ Router::add('course', function () {
         throw new HttpError('No estás inscrito/a en este curso. Si tienes un código, úsalo en «Unirme a un curso».', 403);
     }
     $teacher = is_teacher();
-    $byId = [];
+    $views = $teacher ? [] : Courses::views((int)$course['id'], uid());
+    // Contenidos sueltos de cada apartado, contenido de cada carpeta, estado del alumno
+    // y, por carpeta, [hechos, total] de lo que tiene dentro.
+    $byId = $children = $status = $folders = $parentOf = [];
     foreach (Courses::resources((int)$course['id'], $teacher) as $r) {
-        $byId[(int)$r['section_id']][] = $r;
+        $rid = (int)$r['id'];
+        $pid = (int)$r['parent_id'];
+        $parentOf[$rid] = $pid;
+        if ($pid) {
+            $children[$pid][] = $r;
+        } else {
+            $byId[(int)$r['section_id']][] = $r;
+        }
+        if (Courses::isFolder($r)) {
+            continue;
+        }
+        $status[$rid] = $teacher ? null : Courses::type($r)->status($r, uid(), $views[$rid] ?? null);
+        for ($p = $pid; $p; $p = $parentOf[$p] ?? 0) {
+            $folders[$p][0] = ($folders[$p][0] ?? 0) + (!empty($status[$rid]['done']) ? 1 : 0);
+            $folders[$p][1] = ($folders[$p][1] ?? 0) + 1;
+        }
     }
     View::page('course/view', [
         'course' => $course,
         'teacher' => $teacher,
         'sections' => Courses::sections((int)$course['id'], $teacher),
         'resources' => $byId,
-        'views' => $teacher ? [] : Courses::views((int)$course['id'], uid()),
+        'children' => $children,
+        'status' => $status,
+        'folders' => $folders,
+        'locations' => $teacher ? Courses::locations((int)$course['id']) : [],
         'progress' => $teacher ? null : Courses::progress((int)$course['id'], uid()),
         'students' => $teacher ? (int)Db::val('SELECT COUNT(*) FROM enrolments WHERE course_id = ?', [$course['id']]) : 0,
     ], $course['title'], ['crumbs' => [['Mis cursos', url()]]]);
@@ -165,7 +186,7 @@ Router::add('section/save', function () {
         Db::update('sections', $data, 'id = ?', [$section['id']]);
         $id = (int)$section['id'];
     } else {
-        $data += ['course_id' => $course['id'], 'sort' => Courses::nextSort('sections', 'course_id', (int)$course['id']), 'visible' => 1];
+        $data += ['course_id' => $course['id'], 'sort' => Courses::nextSort('sections', ['course_id' => (int)$course['id']]), 'visible' => 1];
         $id = Db::insert('sections', $data);
     }
     redirect_to(url('course', ['id' => $course['id']]) . '#s' . $id);
@@ -184,7 +205,7 @@ Router::add('section/delete', function () {
 Router::add('section/move', function () {
     $section = Courses::section(pint('id'));
     if ($section) {
-        Courses::move('sections', (int)$section['id'], 'course_id', pint('dir') < 0 ? -1 : 1);
+        Courses::move('sections', (int)$section['id'], ['course_id'], pint('dir') < 0 ? -1 : 1);
         redirect_to(url('course', ['id' => $section['course_id']]) . '#s' . $section['id']);
     }
     redirect();
@@ -197,7 +218,7 @@ Router::add('section/duplicate', function () {
     }
     $cid = (int)$section['course_id'];
     $id = Courses::duplicateSection((int)$section['id'], $cid, $section['title'] . ' (copia)', (int)$section['sort'] + 1);
-    Courses::renumber('sections', 'course_id', $cid);
+    Courses::renumber('sections', ['course_id' => $cid]);
     flash('ok', 'Apartado duplicado con todo su contenido. Cámbiale el título con el lápiz.');
     redirect_to(url('course', ['id' => $cid]) . '#s' . $id);
 }, 'teacher');
@@ -220,15 +241,15 @@ Router::add('resource', function () {
     }
     $course = Courses::find((int)$res['course_id']);
     $type = Courses::type($res);
-    if (!is_teacher()) {
+    if (!is_teacher() && !Courses::isFolder($res)) {
         Courses::recordView($res, uid());
     }
     $redirect = $type->redirect($res);
     if ($redirect && !(is_teacher() && g('manage') === '1')) {
         redirect_to($redirect);
     }
-    // Anterior / siguiente dentro del curso
-    $list = Courses::resources((int)$course['id'], is_teacher());
+    // Anterior / siguiente dentro del curso (sin contar las carpetas)
+    $list = array_values(array_filter(Courses::resources((int)$course['id'], is_teacher()), fn($r) => !Courses::isFolder($r)));
     $prev = $next = null;
     foreach ($list as $i => $r) {
         if ((int)$r['id'] === (int)$res['id']) {
@@ -238,7 +259,8 @@ Router::add('resource', function () {
     }
     $section = Courses::section((int)$res['section_id']);
     View::page('course/resource', [
-        'res' => $res, 'course' => $course, 'type' => $type, 'section' => $section, 'prev' => $prev, 'next' => $next,
+        'res' => $res, 'course' => $course, 'type' => $type, 'section' => $section, 'folders' => Courses::ancestors($res),
+        'prev' => $prev, 'next' => $next,
     ], $res['title'], [
         'crumbs' => [['Mis cursos', url()], [$course['title'], url('course', ['id' => $course['id']])]],
         'wide' => $type->wide(),
@@ -251,13 +273,15 @@ Router::add('resource/edit', function () {
         $type = Courses::type($res);
         $section = Courses::section((int)$res['section_id']);
     } else {
-        $section = Courses::section(gint('section_id'));
+        $folder = gint('parent_id') ? Courses::resource(gint('parent_id')) : null;
+        $folder = $folder && Courses::isFolder($folder) ? $folder : null;
+        $section = Courses::section($folder ? (int)$folder['section_id'] : gint('section_id'));
         $type = ResourceTypes::get(g('type'));
         if (!$section || !$type) {
             throw new HttpError('Elige un apartado y un tipo de contenido.', 404);
         }
         $res = ['id' => 0, 'type' => $type->id(), 'title' => '', 'description' => '', 'data' => [], 'visible' => 1,
-            'section_id' => (int)$section['id'], 'course_id' => (int)$section['course_id']];
+            'section_id' => (int)$section['id'], 'parent_id' => $folder ? (int)$folder['id'] : 0, 'course_id' => (int)$section['course_id']];
     }
     $course = course_or_404((int)$res['course_id']);
     $error = null;
@@ -267,19 +291,22 @@ Router::add('resource/edit', function () {
         $res['title'] = mb_substr(p('title'), 0, 200);
         $res['description'] = Html::clean((string)($_POST['description'] ?? ''));
         $res['visible'] = empty($_POST['visible']) ? 0 : 1;
-        $newSection = Courses::section(pint('section_id'));
-        if ($newSection && (int)$newSection['course_id'] === (int)$course['id']) {
-            $res['section_id'] = (int)$newSection['id'];
-        }
+        // Ubicación elegida: «apartado:carpeta» (carpeta 0 = suelto en el apartado).
+        [$locSection, $locParent] = array_map('intval', explode(':', p('location') . ':0'));
+        $location = Courses::validLocation($res, $locSection, $locParent);
         try {
             if ($res['title'] === '') {
                 throw new UserError('Ponle un título.');
             }
             if ($isNew) {
+                if ($location) {
+                    [$res['section_id'], $res['parent_id']] = $location;
+                }
                 $res['id'] = Db::insert('resources', [
-                    'course_id' => $course['id'], 'section_id' => $res['section_id'], 'type' => $type->id(), 'title' => $res['title'],
+                    'course_id' => $course['id'], 'section_id' => $res['section_id'], 'parent_id' => $res['parent_id'],
+                    'type' => $type->id(), 'title' => $res['title'],
                     'description' => $res['description'], 'data' => '{}', 'visible' => $res['visible'],
-                    'sort' => Courses::nextSort('resources', 'section_id', (int)$res['section_id']),
+                    'sort' => Courses::nextSort('resources', ['section_id' => (int)$res['section_id'], 'parent_id' => (int)$res['parent_id']]),
                     'created_at' => time(), 'updated_at' => time(),
                 ]);
             }
@@ -293,12 +320,12 @@ Router::add('resource/edit', function () {
                 }
                 throw $e;
             }
-            if (!$isNew && (int)$res['section_id'] !== (int)Db::val('SELECT section_id FROM resources WHERE id = ?', [$res['id']])) {
-                Db::q('UPDATE resources SET sort = ? WHERE id = ?', [Courses::nextSort('resources', 'section_id', (int)$res['section_id']), $res['id']]);
+            if (!$isNew && $location && Courses::relocate($res, ...$location)) {
+                [$res['section_id'], $res['parent_id']] = $location;
             }
             Db::update('resources', [
                 'title' => $res['title'], 'description' => $res['description'], 'visible' => $res['visible'],
-                'section_id' => $res['section_id'], 'data' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'data' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 'updated_at' => time(),
             ], 'id = ?', [$res['id']]);
             do_action('resource_saved', Courses::resource((int)$res['id']), $isNew);
@@ -309,7 +336,7 @@ Router::add('resource/edit', function () {
         }
     }
     View::page('course/resource_form', [
-        'res' => $res, 'type' => $type, 'course' => $course, 'sections' => Courses::sections((int)$course['id'], true), 'error' => $error,
+        'res' => $res, 'type' => $type, 'course' => $course, 'locations' => Courses::locations((int)$course['id']), 'error' => $error,
     ], ($res['id'] ? 'Editar: ' : 'Añadir: ') . $type->label(), [
         'crumbs' => [['Mis cursos', url()], [$course['title'], url('course', ['id' => $course['id']])]],
     ]);
@@ -324,27 +351,27 @@ Router::add('resource/delete', function () {
 
 Router::add('resource/move', function () {
     $res = resource_or_404(pint('id'));
-    Courses::move('resources', (int)$res['id'], 'section_id', pint('dir') < 0 ? -1 : 1);
+    Courses::move('resources', (int)$res['id'], ['section_id', 'parent_id'], pint('dir') < 0 ? -1 : 1);
     redirect_to(url('course', ['id' => $res['course_id']]) . '#r' . $res['id']);
 }, 'teacher');
 
 Router::add('resource/duplicate', function () {
     $res = resource_or_404(pint('id'));
     $sid = (int)$res['section_id'];
-    $id = Courses::duplicateResource($res, (int)$res['course_id'], $sid, $res['title'] . ' (copia)', (int)$res['sort'] + 1);
-    Courses::renumber('resources', 'section_id', $sid);
-    flash('ok', 'Contenido duplicado. Edita la copia con el lápiz para cambiarle el título o el archivo.');
+    $pid = (int)$res['parent_id'];
+    $id = Courses::duplicateResource($res, (int)$res['course_id'], $sid, $res['title'] . ' (copia)', (int)$res['sort'] + 1, $pid);
+    Courses::renumber('resources', ['section_id' => $sid, 'parent_id' => $pid]);
+    flash('ok', Courses::isFolder($res)
+        ? 'Carpeta duplicada con todo su contenido. Cámbiale el nombre con el lápiz.'
+        : 'Contenido duplicado. Edita la copia con el lápiz para cambiarle el título o el archivo.');
     redirect_to(url('course', ['id' => $res['course_id']]) . '#r' . $id);
 }, 'teacher');
 
 Router::add('resource/section', function () {
     $res = resource_or_404(pint('id'));
-    $section = Courses::section(pint('section_id'));
-    if ($section && (int)$section['course_id'] === (int)$res['course_id'] && (int)$section['id'] !== (int)$res['section_id']) {
-        Db::update('resources', [
-            'section_id' => $section['id'], 'sort' => Courses::nextSort('resources', 'section_id', (int)$section['id']), 'updated_at' => time(),
-        ], 'id = ?', [$res['id']]);
-        flash('ok', '«' . $res['title'] . '» movido a «' . $section['title'] . '».');
+    if (Courses::relocate($res, pint('section_id'), pint('parent_id'))) {
+        $to = pint('parent_id') ? Courses::resource(pint('parent_id')) : Courses::section(pint('section_id'));
+        flash('ok', '«' . $res['title'] . '» movido a «' . $to['title'] . '».');
     }
     redirect_to(url('course', ['id' => $res['course_id']]) . '#r' . $res['id']);
 }, 'teacher');

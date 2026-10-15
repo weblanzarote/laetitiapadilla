@@ -153,3 +153,44 @@ class MissingResourceType extends ResourceType
         return '<div class="alert alert-warn">Este contenido no está disponible ahora mismo.</div>';
     }
 }
+
+/**
+ * Carpeta: agrupa contenidos dentro de un apartado. Lo que está dentro apunta a ella
+ * con resources.parent_id; en el índice del curso se abre y se cierra en el sitio.
+ */
+class FolderResourceType extends ResourceType
+{
+    const ID = 'folder';
+
+    public function id(): string
+    {
+        return self::ID;
+    }
+
+    public function label(): string
+    {
+        return 'Carpeta';
+    }
+
+    public function icon(): string
+    {
+        return 'folder';
+    }
+
+    public function help(): string
+    {
+        return 'Agrupa varios contenidos dentro del apartado.';
+    }
+
+    public function redirect(array $resource): ?string
+    {
+        return url('course', ['id' => $resource['course_id']]) . '#r' . (int)$resource['id'];
+    }
+
+    public function status(array $resource, int $userId, ?array $view): ?array
+    {
+        return null;
+    }
+}
+
+ResourceTypes::register(new FolderResourceType());

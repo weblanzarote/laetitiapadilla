@@ -56,4 +56,9 @@ return [
         'ALTER TABLE courses ADD COLUMN cover_file_id INT NOT NULL DEFAULT 0',
         "ALTER TABLE courses ADD COLUMN cover_style VARCHAR(20) NOT NULL DEFAULT ''",
     ],
+    // Carpetas: un contenido puede estar dentro de otro de tipo «folder».
+    3 => [
+        'ALTER TABLE resources ADD COLUMN parent_id INT NOT NULL DEFAULT 0',
+        'CREATE INDEX resources_parent ON resources (parent_id)',
+    ],
 ];

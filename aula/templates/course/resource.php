@@ -5,6 +5,7 @@
             <p class="kicker">
                 <span class="res-icon res-icon-<?= e($res['type']) ?> res-icon-sm"><?= icon($type->icon()) ?></span>
                 <?= e($section['title'] ?? '') ?>
+                <?php foreach ($folders as $f): ?><span class="kicker-sep">›</span> <?= e($f['title']) ?><?php endforeach; ?>
                 <?php if ($teacher && !(int)$res['visible']): ?><span class="tag tag-muted">Oculto para el alumnado</span><?php endif; ?>
             </p>
             <h1 class="page-title"><?= e($res['title']) ?></h1>

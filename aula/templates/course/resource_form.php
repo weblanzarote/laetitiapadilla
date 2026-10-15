@@ -1,10 +1,10 @@
 <?php defined('AULA') || exit;
-$action = $res['id'] ? url('resource/edit', ['id' => $res['id']]) : url('resource/edit', ['section_id' => $res['section_id'], 'type' => $type->id()]);
+$action = $res['id'] ? url('resource/edit', ['id' => $res['id']]) : url('resource/edit', ['section_id' => $res['section_id'], 'parent_id' => $res['parent_id'], 'type' => $type->id()]);
 ?>
 <div class="page-head">
     <div>
         <p class="kicker"><span class="res-icon res-icon-<?= e($type->id()) ?> res-icon-sm"><?= icon($type->icon()) ?></span> <?= e($type->label()) ?></p>
-        <h1 class="page-title"><?= $res['id'] ? 'Editar contenido' : 'Añadir contenido' ?></h1>
+        <h1 class="page-title"><?= Courses::isFolder($res) ? ($res['id'] ? 'Editar carpeta' : 'Nueva carpeta') : ($res['id'] ? 'Editar contenido' : 'Añadir contenido') ?></h1>
         <?php if ($type->help()): ?><p class="muted"><?= e($type->help()) ?></p><?php endif; ?>
     </div>
 </div>
@@ -23,10 +23,13 @@ $action = $res['id'] ? url('resource/edit', ['id' => $res['id']]) : url('resourc
 
     <div class="field-row">
         <div class="field">
-            <label for="section_id">Apartado</label>
-            <select id="section_id" name="section_id">
-                <?php foreach ($sections as $s): ?>
-                    <option value="<?= (int)$s['id'] ?>" <?= (int)$s['id'] === (int)$res['section_id'] ? 'selected' : '' ?>><?= e($s['title']) ?></option>
+            <label for="location">Dónde va</label>
+            <select id="location" name="location">
+                <?php foreach ($locations as $loc):
+                    if ($res['id'] && in_array((int)$res['id'], $loc['path'], true)) continue; // una carpeta no puede ir dentro de sí misma
+                    $here = $loc['section_id'] === (int)$res['section_id'] && $loc['parent_id'] === (int)($res['parent_id'] ?? 0);
+                    ?>
+                    <option value="<?= $loc['section_id'] ?>:<?= $loc['parent_id'] ?>" <?= $here ? 'selected' : '' ?>><?= str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $loc['depth']) ?><?= $loc['parent_id'] ? '📁 ' : '' ?><?= e($loc['title']) ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -37,6 +40,6 @@ $action = $res['id'] ? url('resource/edit', ['id' => $res['id']]) : url('resourc
 
     <div class="btn-row">
         <button type="submit" class="btn btn-primary"><?= icon('check') ?> Guardar</button>
-        <a class="btn btn-ghost" href="<?= url('course', ['id' => $course['id']]) ?><?= $res['id'] ? '#r' . (int)$res['id'] : '#s' . (int)$res['section_id'] ?>">Cancelar</a>
+        <a class="btn btn-ghost" href="<?= url('course', ['id' => $course['id']]) ?><?= $res['id'] ? '#r' . (int)$res['id'] : ($res['parent_id'] ? '#r' . (int)$res['parent_id'] : '#s' . (int)$res['section_id']) ?>">Cancelar</a>
     </div>
 </form>

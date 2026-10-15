@@ -1591,6 +1591,97 @@ input[type=file] {
 .res-icon-link { background: #e9f6f6; color: #1f7a7a; }
 .res-icon-file { background: #f4f1ea; color: #8a6a2f; }
 .res-icon-scorm { background: #eaf6f0; color: var(--c-ok); }
+.res-icon-folder { background: #fdf3dc; color: #b07d1a; }
+
+/* Carpetas del índice: se abren en el sitio y su contenido va sangrado debajo */
+.res-folder {
+    flex-wrap: wrap;
+}
+
+.res-folder:hover {
+    background: none;
+}
+
+.folder-toggle {
+    background: none;
+    border: 0;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: background .15s;
+}
+
+.folder-toggle:hover {
+    background: var(--c-bg);
+}
+
+.res-icon-folder .fa-folder-open,
+.res-folder.is-open > .folder-toggle .res-icon-folder .fa-folder {
+    display: none;
+}
+
+.res-folder.is-open > .folder-toggle .res-icon-folder .fa-folder-open {
+    display: inline-block;
+}
+
+.folder-caret {
+    margin-left: auto;
+    color: var(--c-muted);
+    font-size: .8rem;
+    transition: transform .2s;
+}
+
+.res-folder.is-open > .folder-toggle .folder-caret {
+    transform: rotate(180deg);
+}
+
+.folder-body {
+    flex-basis: 100%;
+    min-width: 0;
+    margin: 0 0 .5rem 1.95rem;
+    padding-left: .6rem;
+    border-left: 2px solid #f1e3bf;
+}
+
+.folder-body .res-list {
+    padding: 0;
+}
+
+.folder-desc {
+    padding: .25rem .75rem .5rem;
+}
+
+.folder-empty {
+    margin: 0;
+    padding: .5rem .75rem;
+    font-size: .9rem;
+}
+
+.folder-body .add-menu {
+    border-top: 0;
+    padding: .35rem .75rem .5rem;
+}
+
+.move-dest {
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    padding-left: calc(var(--depth, 0) * 1.1rem);
+}
+
+.move-here {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .55rem .75rem;
+    font-size: .92rem;
+    color: var(--c-muted);
+}
+
+.kicker-sep {
+    opacity: .6;
+}
 
 .res-status {
     color: var(--c-line-strong);
@@ -2711,6 +2802,11 @@ a.avatar-link:hover {
         justify-content: flex-start;
         padding-left: 3.5rem;
         margin-top: -.5rem;
+    }
+
+    .folder-body {
+        margin-left: 1rem;
+        padding-left: .3rem;
     }
 
     .field-row {

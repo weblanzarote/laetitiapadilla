@@ -212,7 +212,7 @@ Router::add('admin/system', function () {
     $counts = [
         'Cursos' => (int)Db::val('SELECT COUNT(*) FROM courses'),
         'Cuentas' => (int)Db::val('SELECT COUNT(*) FROM users'),
-        'Contenidos' => (int)Db::val('SELECT COUNT(*) FROM resources'),
+        'Contenidos' => (int)Db::val("SELECT COUNT(*) FROM resources WHERE type <> 'folder'"),
         'Archivos' => (int)Db::val('SELECT COUNT(*) FROM files'),
     ];
     $log = is_file("$dir/error.log") ? implode("\n", array_slice(file("$dir/error.log", FILE_IGNORE_NEW_LINES) ?: [], -30)) : '';

@@ -439,6 +439,53 @@
         }
     }
 
+    // ─── Carpetas del índice del curso ───────────────────────────
+    // Se abren y cierran en el sitio; el navegador recuerda cuáles dejaste abiertas.
+
+    var FOLDERS_KEY = 'aula-open-folders';
+    var openFolderIds = function () {
+        try { return JSON.parse(localStorage.getItem(FOLDERS_KEY) || '[]') || []; } catch (err) { return []; }
+    };
+    var setFolder = function (btn, open, remember) {
+        var body = document.getElementById(btn.getAttribute('aria-controls'));
+        if (!body) return;
+        body.hidden = !open;
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.parentNode.classList.toggle('is-open', open);
+        if (!remember) return;
+        try {
+            var ids = openFolderIds().filter(function (id) { return id !== body.id; });
+            if (open) ids.push(body.id);
+            localStorage.setItem(FOLDERS_KEY, JSON.stringify(ids.slice(-300)));
+        } catch (err) { /* sin almacenamiento: no se recuerda */ }
+    };
+    // Abre las carpetas que contienen el elemento del #ancla (p. ej. al volver de editar).
+    var revealHash = function () {
+        var el = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
+        if (!el) return;
+        var opened = false;
+        for (var p = el.parentNode; p && p !== document; p = p.parentNode) {
+            if (p.classList && p.classList.contains('folder-body') && p.hidden) {
+                var b = $('[aria-controls="' + p.id + '"]');
+                if (b) { setFolder(b, true, false); opened = true; }
+            }
+        }
+        if (opened) el.scrollIntoView({ block: 'center' });
+    };
+    var folderBtns = $$('.folder-toggle');
+    if (folderBtns.length) {
+        var remembered = openFolderIds();
+        folderBtns.forEach(function (b) {
+            if (remembered.indexOf(b.getAttribute('aria-controls')) !== -1) setFolder(b, true, false);
+        });
+        revealHash();
+        window.addEventListener('hashchange', revealHash);
+        document.addEventListener('click', function (e) {
+            var b = e.target.closest('.folder-toggle');
+            if (b) setFolder(b, b.getAttribute('aria-expanded') !== 'true', true);
+        });
+    }
+
     // ─── Visor de imágenes a pantalla completa ──────────────────
     // Enlaces con data-lightbox e imágenes de los textos (.prose img).
     // Primer clic: imagen ajustada a la pantalla; otro clic: ampliada.

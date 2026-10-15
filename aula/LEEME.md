@@ -34,7 +34,12 @@ CyberPanel o crear una base de datos MySQL y configurarla en `aula/config.local.
   o paquete SCORM. Todo se puede ocultar, ordenar con las flechas y editar.
 - **Duplicar** un apartado con todo su contenido (botón de copiar en su cabecera) o un solo
   contenido (botón de copiar junto a él). La copia aparece justo debajo con «(copia)».
-- **Mover un contenido a otro apartado**: botón de carpeta junto al contenido.
+- **Carpetas**: en «Añadir contenido o carpeta» › Carpeta. Agrupan contenidos dentro de un
+  apartado (y pueden tener otras carpetas dentro); se abren y cierran pulsándolas. Dentro de
+  cada carpeta hay «Añadir a esta carpeta». Duplicar o borrar una carpeta incluye lo que tiene,
+  y si se oculta, el alumnado no ve nada de lo que hay dentro.
+- **Mover un contenido a otro apartado o carpeta**: botón del árbol junto al contenido, o el
+  campo «Dónde va» al editarlo.
 - **Portada del curso**: Ajustes del curso › Portada (o «Cambiar portada» en la cabecera).
   Se sube una foto horizontal o se elige uno de los diseños de serie.
 - **Imágenes y fichas** (archivo JPG/PNG): se ven a todo el ancho; al pulsarlas se abren a

@@ -11,7 +11,7 @@ Router::add('home', function () {
         foreach ($courses as $c) {
             $stats[(int)$c['id']] = [
                 'students' => (int)Db::val('SELECT COUNT(*) FROM enrolments WHERE course_id = ?', [$c['id']]),
-                'resources' => (int)Db::val('SELECT COUNT(*) FROM resources WHERE course_id = ?', [$c['id']]),
+                'resources' => (int)Db::val("SELECT COUNT(*) FROM resources WHERE course_id = ? AND type <> 'folder'", [$c['id']]),
             ];
         }
         $recent = Db::all("SELECT * FROM users WHERE role = 'student' ORDER BY created_at DESC LIMIT 6");

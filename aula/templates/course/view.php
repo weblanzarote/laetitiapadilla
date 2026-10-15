@@ -1,6 +1,13 @@
 <?php defined('AULA') || exit;
+// Los tipos de contenido, con la carpeta al final.
 $types = ResourceTypes::all();
+if (isset($types[FolderResourceType::ID])) {
+    $folderType = $types[FolderResourceType::ID];
+    unset($types[FolderResourceType::ID]);
+    $types[FolderResourceType::ID] = $folderType;
+}
 $cid = (int)$course['id'];
+$lists = compact('teacher', 'children', 'status', 'folders', 'locations', 'types');
 ?>
 <header class="course-hero card">
     <div class="course-hero-cover">
@@ -74,69 +81,13 @@ $cid = (int)$course['id'];
         <?php if ($s['summary']): ?><div class="prose unit-summary"><?= $s['summary'] ?></div><?php endif; ?>
 
         <?php if ($items): ?>
-            <ul class="res-list">
-                <?php foreach ($items as $r):
-                    $type = Courses::type($r);
-                    $rid = (int)$r['id'];
-                    $status = $teacher ? null : $type->status($r, uid(), $views[$rid] ?? null);
-                    $newTab = $type->opensNewTab($r);
-                    $meta = $type->meta($r);
-                    ?>
-                    <li class="res-item<?= (int)$r['visible'] ? '' : ' is-hidden' ?><?= $status && !empty($status['done']) ? ' is-done' : '' ?>" id="r<?= $rid ?>">
-                        <a class="res-link" href="<?= url('resource', ['id' => $rid]) ?>"<?= $newTab ? ' target="_blank" rel="noopener"' : '' ?>>
-                            <span class="res-icon res-icon-<?= e($r['type']) ?>"><?= icon($type->icon()) ?></span>
-                            <span class="res-text">
-                                <span class="res-title"><?= e($r['title']) ?><?= $newTab ? ' ' . icon('arrow-up-right-from-square', 'res-ext') : '' ?></span>
-                                <span class="res-meta"><?= e($type->label()) ?><?= $meta !== '' ? ' · ' . e($meta) : '' ?></span>
-                            </span>
-                        </a>
-                        <?php if ($status): ?>
-                            <span class="res-status<?= !empty($status['done']) ? ' done' : '' ?>" title="<?= e($status['label']) ?>">
-                                <?= icon(!empty($status['done']) ? 'circle-check' : 'circle-half-stroke') ?><span class="sr-only"><?= e($status['label']) ?></span>
-                            </span>
-                        <?php endif; ?>
-                        <?php if ($teacher): ?>
-                            <div class="tools">
-                                <?php if (!(int)$r['visible']): ?><span class="tag tag-muted">Oculto</span><?php endif; ?>
-                                <?= post_button('resource/move', ['id' => $rid, 'dir' => -1], icon('arrow-up'), 'icon-btn', 'Subir') ?>
-                                <?= post_button('resource/move', ['id' => $rid, 'dir' => 1], icon('arrow-down'), 'icon-btn', 'Bajar') ?>
-                                <?= post_button('resource/toggle', ['id' => $rid], icon((int)$r['visible'] ? 'eye' : 'eye-slash'), 'icon-btn', (int)$r['visible'] ? 'Ocultar' : 'Mostrar') ?>
-                                <?php if (count($sections) > 1): ?>
-                                    <details class="dropdown move-menu">
-                                        <summary class="icon-btn" title="Mover a otro apartado" aria-label="Mover a otro apartado"><?= icon('folder-tree') ?></summary>
-                                        <div class="dropdown-menu dropdown-right">
-                                            <div class="dropdown-head"><small>Mover a otro apartado</small></div>
-                                            <?php foreach ($sections as $other): if ((int)$other['id'] === $sid) continue; ?>
-                                                <?= post_button('resource/section', ['id' => $rid, 'section_id' => $other['id']], icon('folder') . ' ' . e($other['title']), '') ?>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    </details>
-                                <?php endif; ?>
-                                <a class="icon-btn" href="<?= url('resource/edit', ['id' => $rid]) ?>" title="Editar" aria-label="Editar"><?= icon('pen') ?></a>
-                                <?= post_button('resource/duplicate', ['id' => $rid], icon('clone'), 'icon-btn', 'Duplicar') ?>
-                                <?= post_button('resource/delete', ['id' => $rid], icon('trash'), 'icon-btn icon-danger', 'Borrar', '¿Borrar «' . $r['title'] . '»?') ?>
-                            </div>
-                        <?php endif; ?>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
+            <?= partial('course/_items', ['items' => $items] + $lists) ?>
         <?php elseif (!$teacher): ?>
             <p class="muted unit-empty">Pronto habrá contenido aquí.</p>
         <?php endif; ?>
 
         <?php if ($teacher): ?>
-            <details class="add-menu">
-                <summary><?= icon('plus') ?> Añadir contenido</summary>
-                <div class="type-grid">
-                    <?php foreach ($types as $t): ?>
-                        <a class="type-card" href="<?= url('resource/edit', ['section_id' => $sid, 'type' => $t->id()]) ?>">
-                            <span class="res-icon res-icon-<?= e($t->id()) ?>"><?= icon($t->icon()) ?></span>
-                            <strong><?= e($t->label()) ?></strong>
-                            <small><?= e($t->help()) ?></small>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
-            </details>
+            <?= partial('course/_add_menu', ['label' => 'Añadir contenido o carpeta', 'params' => ['section_id' => $sid], 'types' => $types]) ?>
         <?php endif; ?>
     </section>
 <?php endforeach; ?>
