@@ -1,5 +1,10 @@
 # Instrucciones para agentes
 
+- Este repo es **solo el aula virtual** (`aula/`). Desde el 22/10/2026 la web pública de laetitiapadilla.com es Astro
+  y vive en `D:\COSAS DE IA\43_WEBS\sites\laetitiapadilla.com` (repo `weblanzarote/laetitiapadilla-web`). En el
+  servidor, el `.htaccess` de `public_html` manda todo a Node salvo `/aula/`: no subir páginas ni un `.htaccess` a la
+  raíz desde aquí. El aula enlaza a `../index.html`, `../logo.jpg` y `../favicon.png`, que ahora sirve la web Astro.
+
 - El agente puede desplegar al servidor sin pedir confirmación cuando termine un cambio que
   le haya pedido el propietario. Antes de desplegar, debe comprobar los cambios en local
   (sintaxis PHP con `php -l`, pruebas, servidor local si aplica).

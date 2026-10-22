@@ -233,24 +233,8 @@ function Get-ChangedFilesForDeploy {
     $changed = @()
   }
 
-  # Si no detectamos cambios por git (o estado vacío), caemos a la lista fija.
-  if (-not $changed -or $changed.Count -eq 0) {
-    $changed = @(
-      "index.html",
-      "contacto.html",
-      "formacion.html",
-      "clases.html",
-      "interprete.html",
-      "acompanamiento.html",
-      "styles.css",
-      "script.js",
-      "logo.jpg",
-      "background.jpg",
-      "background_trans.png",
-      "tarjeta_visita.jpg",
-      "api/contact.php"
-    )
-  }
+  # Sin cambios no se sube nada. (Antes caía a la lista fija de la web pública vieja; desde el 22/10/2026 esa web es
+  # Astro, en 43_WEBS, y este repo solo lleva el aula.)
 
   # Solo archivos existentes en el proyecto, y solo ficheros (no carpetas).
   $changed = $changed |
@@ -297,7 +281,9 @@ function Deploy-To-Server {
   $files = Get-ChangedFilesForDeploy
 
   if ($files.Count -eq 0) {
-    throw "No encuentro archivos para desplegar en esta carpeta. Estas en la raiz del proyecto?"
+    Write-Host "No hay archivos nuevos o cambiados que subir." -ForegroundColor Gray
+    try { Set-Content -Path (Get-DeployStatePath) -Value (git rev-parse HEAD).Trim() -Encoding ASCII } catch { }
+    return
   }
 
   # Archivos del repo que no deben acabar en la web publica.
